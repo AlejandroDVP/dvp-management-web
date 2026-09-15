@@ -1,0 +1,129 @@
+name: Bootstrap production site
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/bootstrap-site.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download current production site
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://dvp.football"
+
+          mkdir -p assets build vendor \
+            representacion-futbolistas patrimonio-futbolistas marca-personal-futbolistas \
+            videoanalisis-futbolistas bienestar-futbolistas sobre-dvp guia-primer-contacto-agencia
+
+          curl -fsSL "$BASE/" -o index.html
+          curl -fsSL "$BASE/robots.txt" -o robots.txt
+          curl -fsSL "$BASE/sitemap.xml" -o sitemap.xml
+
+          curl -fsSL "$BASE/representacion-futbolistas/" -o representacion-futbolistas/index.html
+          curl -fsSL "$BASE/patrimonio-futbolistas/" -o patrimonio-futbolistas/index.html
+          curl -fsSL "$BASE/marca-personal-futbolistas/" -o marca-personal-futbolistas/index.html
+          curl -fsSL "$BASE/videoanalisis-futbolistas/" -o videoanalisis-futbolistas/index.html
+          curl -fsSL "$BASE/bienestar-futbolistas/" -o bienestar-futbolistas/index.html
+          curl -fsSL "$BASE/sobre-dvp/" -o sobre-dvp/index.html
+          curl -fsSL "$BASE/guia-primer-contacto-agencia/" -o guia-primer-contacto-agencia/index.html
+
+          assets=(
+            acrobacia.webp analytics-black-hd-768.webp analytics-black-hd.webp ciudad.webp favicon.svg
+            globe-black-hd-768.webp globe-black-hd.webp globe-white-hd-768.webp globe-white-hd.webp
+            gradient-1.webp gradient-10.webp gradient-2.webp gradient-3.webp gradient-4.webp gradient-5.webp
+            gradient-7.webp gradient-8.webp gradient-9.webp grain.svg grain.webp instinto.webp jugada.webp
+            management-black-hd-768.webp management-black-hd.webp management-white-hd-768.webp management-white-hd.webp
+            movimiento.webp pasion.webp performance.webp publicity-black-hd-768.webp publicity-black-hd.webp red.webp
+            social-cover.jpg wealth-black-hd-768.webp wealth-black-hd.webp wealth-selected-third.webp wellness-white.png
+            wordmark-black-hd-768.webp wordmark-black-hd.webp
+          )
+          for f in "${assets[@]}"; do
+            curl -fsSL "$BASE/assets/$f" -o "assets/$f"
+          done
+
+          curl -fsSL "$BASE/build/app.2d2bf2c0834f.js" -o build/app.2d2bf2c0834f.js
+          curl -fsSL "$BASE/build/services.0a68c3d173f8.css" -o build/services.0a68c3d173f8.css
+          curl -fsSL "$BASE/build/styles.4dbcb5402ae8.css" -o build/styles.4dbcb5402ae8.css
+          curl -fsSL "$BASE/vendor/react-runtime.min.js" -o vendor/react-runtime.min.js
+
+          cat > vendor/LICENSE-React.txt <<'EOF'
+          React
+          Copyright (c) Meta Platforms, Inc. and affiliates.
+          Licensed under the MIT License.
+          See https://github.com/facebook/react/blob/main/LICENSE
+          EOF
+
+          cat > .gitignore <<'EOF'
+          .DS_Store
+          Thumbs.db
+          *.log
+          .env
+          .env.*
+          !.env.example
+          .vercel/
+          node_modules/
+          EOF
+
+          cat > .vercelignore <<'EOF'
+          .git/
+          .github/
+          .gitignore
+          README.md
+          .DS_Store
+          *.log
+          .env*
+          EOF
+
+          cat > 404.html <<'EOF'
+          <!DOCTYPE html>
+          <html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><meta content="noindex,follow" name="robots"/><title>Página no encontrada | DVP Management</title><style>body{font:20px/1.6 Arial;background:#f1f1e6;color:#151910;max-width:720px;margin:12vh auto;padding:24px}a{color:inherit}h1{font-size:48px}</style></head><body><h1>Esta página no está en juego.</h1><p>La dirección no existe o cambió.</p><a href="/">Volver a DVP Management</a><p>También puedes consultar <a href="/representacion-futbolistas/">representación de futbolistas</a>, <a href="/sobre-dvp/">conocer DVP</a> o escribir a <a href="mailto:alejandro@dvp.football">alejandro@dvp.football</a>.</p></body></html>
+          EOF
+
+          cat > vercel.json <<'EOF'
+          {
+            "cleanUrls": true,
+            "trailingSlash": true,
+            "headers": [
+              {"source":"/assets/:path*","headers":[{"key":"Cache-Control","value":"public, max-age=86400"}]},
+              {"source":"/build/:path*","headers":[{"key":"Cache-Control","value":"public, max-age=31536000, immutable"}]},
+              {"source":"/vendor/:path*","headers":[{"key":"Cache-Control","value":"public, max-age=86400"}]},
+              {"source":"/:path*","headers":[{"key":"X-Content-Type-Options","value":"nosniff"},{"key":"Referrer-Policy","value":"strict-origin-when-cross-origin"}]}
+            ],
+            "redirects": [
+              {"source":"/:path*","has":[{"type":"host","value":"www.dvp.football"}],"destination":"https://dvp.football/:path*","permanent":true},
+              {"source":"/index.html","destination":"/","permanent":true},
+              {"source":"/representacion-futbolistas/index.html","destination":"/representacion-futbolistas/","permanent":true},
+              {"source":"/patrimonio-futbolistas/index.html","destination":"/patrimonio-futbolistas/","permanent":true},
+              {"source":"/marca-personal-futbolistas/index.html","destination":"/marca-personal-futbolistas/","permanent":true},
+              {"source":"/videoanalisis-futbolistas/index.html","destination":"/videoanalisis-futbolistas/","permanent":true},
+              {"source":"/bienestar-futbolistas/index.html","destination":"/bienestar-futbolistas/","permanent":true},
+              {"source":"/sobre-dvp/index.html","destination":"/sobre-dvp/","permanent":true},
+              {"source":"/guia-primer-contacto-agencia/index.html","destination":"/guia-primer-contacto-agencia/","permanent":true}
+            ]
+          }
+          EOF
+
+      - name: Commit production source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "DVP Web Bootstrap"
+          git config user.email "alejandro@dvp.football"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nothing to commit"
+            exit 0
+          fi
+          git commit -m "feat: import current production website"
+          git push origin HEAD:main
