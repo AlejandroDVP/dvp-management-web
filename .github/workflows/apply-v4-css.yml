@@ -1,0 +1,38 @@
+name: Apply DVP service card v4 CSS
+
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-v4-css.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Load v4 CSS after v3
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          if 'build/service-cards.v4.css' not in s:
+              s=s.replace('<link href="build/service-cards.v3.css" rel="stylesheet"/>','<link href="build/service-cards.v3.css" rel="stylesheet"/><link href="build/service-cards.v4.css" rel="stylesheet"/>')
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit
+        shell: bash
+        run: |
+          git config user.name "DVP Web Update"
+          git config user.email "alejandro@dvp.football"
+          git add index.html
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "fix: force approved management image in service card"
+          git push origin HEAD:main
