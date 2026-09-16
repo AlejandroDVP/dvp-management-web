@@ -1,106 +1,147 @@
-/* DVP — surgical Football Management card enhancement. No layout overrides. */
-#management .management-photo,
-#management .m-photo-block{
-  position:relative;
+/* DVP — service images become the CTA without changing scene layouts. */
+
+/* The old text CTA disappears. Modality labels can remain as context. */
+.scene.has-service-details .service-open{display:none!important}
+#management .service-actions{display:none!important}
+
+/* IMPORTANT: never change the existing position/size/rotation of the visual wrappers. */
+.dvp-service-card{
   cursor:pointer;
-  overflow:hidden;
-  perspective:1000px;
+  isolation:isolate;
   outline:none;
+  transition:translate .34s cubic-bezier(.22,.75,.24,1),
+             box-shadow .34s ease,
+             opacity .28s ease,
+             filter .28s ease;
 }
+.dvp-service-card:focus-visible{
+  box-shadow:0 0 0 3px rgba(245,245,232,.92),0 0 0 7px rgba(10,10,10,.35)!important;
+}
+
+/* Football Management: use the approved image as the card, cropped around the player. */
 #management .management-photo > img,
 #management .m-photo-block > img{
-  transition:opacity .34s ease, transform .48s cubic-bezier(.22,.75,.24,1), filter .34s ease;
-  backface-visibility:hidden;
+  object-fit:cover!important;
+  object-position:72% 50%!important;
+  filter:none!important;
 }
-#management .management-card-back{
+
+/* Short service information that appears on hover. */
+.dvp-card-back{
   position:absolute;
   inset:0;
-  z-index:5;
+  z-index:30;
   box-sizing:border-box;
   display:flex;
   flex-direction:column;
   justify-content:flex-end;
-  padding:clamp(22px,2.5vw,38px);
-  color:#f3f1e8;
+  gap:10px;
+  padding:clamp(18px,2.2vw,34px);
+  color:#f5f3e9;
   background:
-    radial-gradient(circle at 78% 18%,rgba(195,255,52,.20),transparent 34%),
-    linear-gradient(145deg,rgba(9,14,13,.96),rgba(12,18,14,.86));
-  border:1px solid rgba(255,255,255,.14);
+    radial-gradient(circle at 82% 15%,var(--dvp-card-glow,rgba(207,255,75,.22)),transparent 34%),
+    linear-gradient(145deg,rgba(8,12,12,.93),rgba(10,13,12,.80));
+  border:1px solid rgba(255,255,255,.13);
   opacity:0;
-  transform:rotateY(-88deg);
-  transform-origin:center;
-  transition:opacity .32s ease, transform .48s cubic-bezier(.22,.75,.24,1);
-  backface-visibility:hidden;
+  transform:translateY(10px);
+  transition:opacity .28s ease,transform .34s cubic-bezier(.22,.75,.24,1);
   pointer-events:none;
 }
-#management .management-card-back small{
-  margin-bottom:10px;
-  font-size:10px;
+.dvp-card-back small{
+  margin:0;
+  font-size:9px;
   font-weight:800;
   letter-spacing:.16em;
   text-transform:uppercase;
   opacity:.66;
 }
-#management .management-card-back strong{
-  max-width:13ch;
-  font-size:clamp(25px,3vw,46px);
-  line-height:.95;
-  letter-spacing:-.03em;
+.dvp-card-back strong{
+  display:block;
+  max-width:15ch;
+  font-size:clamp(24px,2.8vw,44px);
+  line-height:.94;
+  letter-spacing:-.035em;
   text-transform:uppercase;
 }
-#management .management-card-back p{
-  max-width:35ch;
-  margin:14px 0 0;
-  font-size:clamp(13px,1.05vw,16px);
+.dvp-card-back p{
+  max-width:36ch;
+  margin:0;
+  font-size:clamp(12px,1.02vw,16px);
   line-height:1.45;
-  opacity:.82;
+  opacity:.84;
 }
-#management .management-card-back span{
-  margin-top:16px;
-  font-size:10px;
+.dvp-card-back span{
+  margin-top:4px;
+  font-size:9px;
   font-weight:800;
-  letter-spacing:.11em;
+  letter-spacing:.12em;
   text-transform:uppercase;
 }
+
+.dvp-card-management{--dvp-card-glow:rgba(199,255,48,.26)}
+.dvp-card-wealth{--dvp-card-glow:rgba(186,104,255,.30)}
+.dvp-card-publicity{--dvp-card-glow:rgba(255,126,64,.31)}
+.dvp-card-analytics{--dvp-card-glow:rgba(46,229,215,.30)}
+.dvp-card-wellness{--dvp-card-glow:rgba(206,255,62,.28)}
+
+/* Desktop: the photo stays where it always was; hover simply reveals its reverse/info state. */
 @media (hover:hover) and (pointer:fine){
-  #management .management-photo:hover > img,
-  #management .management-photo:focus-visible > img{
-    opacity:.04;
-    transform:rotateY(88deg) scale(.99);
+  .dvp-service-card:hover,
+  .dvp-service-card:focus-visible{
+    translate:0 -4px;
   }
-  #management .management-photo:hover .management-card-back,
-  #management .management-photo:focus-visible .management-card-back{
+  .dvp-service-card:hover > img,
+  .dvp-service-card:focus-visible > img,
+  .dvp-service-card:hover > .analysis-film,
+  .dvp-service-card:focus-visible > .analysis-film{
+    filter:brightness(.42) saturate(.72)!important;
+  }
+  .dvp-service-card:hover .dvp-card-back,
+  .dvp-service-card:focus-visible .dvp-card-back{
     opacity:1;
-    transform:rotateY(0);
+    transform:translateY(0);
+  }
+  /* Wealth is intentionally muted in the base design; make the card readable only while exploring it. */
+  #wealth .dvp-service-card:hover,
+  #wealth .dvp-service-card:focus-visible{
+    opacity:1!important;
+    mix-blend-mode:normal!important;
+    -webkit-mask-image:none!important;
+    mask-image:none!important;
   }
 }
+
+/* Mobile has no hover. A tiny periodic lift says “this image is tappable”. */
 @media (max-width:760px){
-  #management .management-card-back{display:none}
-  #management .m-photo-block::after{
+  .dvp-card-back{display:none!important}
+  .dvp-service-card::before{
     content:"TOCA ↗";
     position:absolute;
     right:10px;
     bottom:10px;
-    z-index:6;
+    z-index:40;
     padding:7px 10px 6px;
     border-radius:999px;
     color:#fff;
-    background:rgba(10,10,10,.75);
-    font-size:9px;
+    background:rgba(9,11,10,.76);
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+    font-size:8px;
     font-weight:800;
-    letter-spacing:.11em;
+    letter-spacing:.12em;
     pointer-events:none;
   }
-  #management .m-photo-block{animation:dvpManagementInvite 4.8s cubic-bezier(.22,.75,.24,1) infinite}
+  .dvp-service-card{
+    animation:dvpCardInvite 5.2s cubic-bezier(.22,.75,.24,1) infinite;
+  }
 }
-@keyframes dvpManagementInvite{
+@keyframes dvpCardInvite{
   0%,72%,100%{translate:0 0}
-  79%{translate:0 -5px}
-  85%{translate:0 1px}
-  91%{translate:0 -2px}
+  78%{translate:0 -5px}
+  84%{translate:0 1px}
+  90%{translate:0 -2px}
 }
 @media (prefers-reduced-motion:reduce){
-  #management .m-photo-block{animation:none}
-  #management .management-photo > img,
-  #management .management-card-back{transition:none}
+  .dvp-service-card{animation:none!important;transition:none!important}
+  .dvp-card-back{transition:none!important}
 }
