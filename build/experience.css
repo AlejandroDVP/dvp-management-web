@@ -1,0 +1,231 @@
+/* DVP visual polish · service interaction layer · 2026-09-15 */
+
+/* The site keeps moving. Motion control is intentionally removed from the UI. */
+.motion-toggle{display:none!important;visibility:hidden!important;pointer-events:none!important}
+
+/* Service branch marks: exact logo artwork, presented on DVP four-tone gradient orbs. */
+.scene.has-service-details .branch-logo-slot{
+  --orb-a:#ff5e43;
+  --orb-b:#ffda67;
+  --orb-c:#ff2c22;
+  --orb-d:#2a0906;
+  width:clamp(150px,14.5vw,225px)!important;
+  height:auto!important;
+  aspect-ratio:1/1;
+  max-width:none!important;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  padding:12%;
+  overflow:hidden;
+  isolation:isolate;
+  background:
+    radial-gradient(circle at 67% 29%,rgba(255,255,255,.56) 0 9%,rgba(255,255,255,.13) 25%,transparent 41%),
+    linear-gradient(135deg,var(--orb-a) 2%,var(--orb-b) 42%,var(--orb-c) 70%,var(--orb-d) 100%);
+  box-shadow:
+    inset -18px -22px 38px rgba(0,0,0,.28),
+    inset 13px 13px 25px rgba(255,255,255,.08),
+    0 15px 40px rgba(0,0,0,.10);
+  pointer-events:none;
+}
+.scene.has-service-details .branch-logo-slot::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  background:linear-gradient(135deg,rgba(255,255,255,.09),transparent 36%,rgba(0,0,0,.08));
+  pointer-events:none;
+}
+.scene.has-service-details .branch-logo-slot img{
+  position:relative;
+  z-index:1;
+  width:82%!important;
+  height:auto!important;
+  max-height:58%!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  visibility:visible!important;
+  filter:none!important;
+}
+.scene.has-service-details[data-branch="management"] .branch-logo-slot{
+  --orb-a:#ff2d24;--orb-b:#fff472;--orb-c:#ff641f;--orb-d:#521009;
+}
+.scene.has-service-details[data-branch="analytics"] .branch-logo-slot{
+  --orb-a:#5425ff;--orb-b:#20ead7;--orb-c:#1769ff;--orb-d:#0b1033;
+}
+.scene.has-service-details[data-branch="publicity"] .branch-logo-slot{
+  --orb-a:#6424ff;--orb-b:#ffd772;--orb-c:#ff6946;--orb-d:#34105d;
+}
+.scene.has-service-details[data-branch="wealth"] .branch-logo-slot{
+  --orb-a:#5525f4;--orb-b:#f4c8ff;--orb-c:#a64fff;--orb-d:#241055;
+}
+.scene.has-service-details[data-branch="wellness"] .branch-logo-slot{
+  --orb-a:#8dcc00;--orb-b:#fff96e;--orb-c:#c4ff16;--orb-d:#263500;
+}
+/* Management and Wellness currently use exact white brand assets; invert only the artwork. */
+.scene.has-service-details[data-branch="management"] .branch-logo-slot img,
+.scene.has-service-details[data-branch="wellness"] .branch-logo-slot img{filter:invert(1)!important}
+.scene.has-service-details .branch-name{display:none!important}
+
+/* Keep the selected Management image more cinematic and less poster-like. */
+#management .management-photo{
+  right:4%!important;
+  top:23%!important;
+  width:47%!important;
+  height:48%!important;
+  transform:rotate(4deg)!important;
+  clip-path:none!important;
+  border-radius:1px;
+  box-shadow:0 24px 60px rgba(0,0,0,.22);
+}
+#management .management-photo img{
+  filter:none!important;
+  object-position:58% 50%!important;
+  transform:scale(1.02) translateY(calc(var(--parallax,0)*-5px))!important;
+}
+#management .m-photo-block img{
+  filter:none!important;
+  object-position:66% center!important;
+}
+
+/* Image-as-interface. Desktop: hover reveals the short service card. Click opens full dialog. */
+.service-visual{
+  position:relative!important;
+  cursor:pointer;
+  perspective:1000px;
+  isolation:isolate;
+  outline:none;
+}
+.service-visual > img,
+.service-visual > picture,
+.service-visual > picture > img{
+  transition:transform .46s cubic-bezier(.22,.75,.24,1),opacity .28s ease,filter .3s ease!important;
+  backface-visibility:hidden;
+  transform-origin:center;
+}
+.service-info-back{
+  position:absolute;
+  inset:0;
+  z-index:12;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  gap:10px;
+  padding:clamp(18px,2vw,30px);
+  color:#f7f5ed;
+  background:
+    radial-gradient(circle at 82% 16%,var(--service-glow,rgba(116,238,221,.32)),transparent 36%),
+    linear-gradient(145deg,rgba(10,12,12,.94),rgba(12,12,12,.79));
+  border:1px solid rgba(255,255,255,.14);
+  opacity:0;
+  transform:rotateY(-88deg) scale(.985);
+  transform-origin:center;
+  transition:transform .46s cubic-bezier(.22,.75,.24,1),opacity .28s ease;
+  backface-visibility:hidden;
+  pointer-events:none;
+}
+.service-info-back::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:radial-gradient(circle at 20% 82%,rgba(255,255,255,.08),transparent 33%);
+  pointer-events:none;
+}
+.service-info-back > *{position:relative;z-index:1}
+.service-info-kicker{
+  margin:0;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  opacity:.68;
+}
+.service-info-back h3{
+  margin:0;
+  font-size:clamp(25px,3.4vw,54px);
+  line-height:.92;
+  letter-spacing:-.035em;
+  text-transform:uppercase;
+}
+.service-info-back p:not(.service-info-kicker):not(.service-info-cta){
+  margin:0;
+  max-width:37ch;
+  font-size:clamp(13px,1.1vw,17px);
+  line-height:1.42;
+  opacity:.84;
+}
+.service-info-cta{
+  margin:5px 0 0;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+}
+.service-visual--management{--service-glow:rgba(255,92,40,.45)}
+.service-visual--wealth{--service-glow:rgba(187,92,255,.46)}
+.service-visual--publicity{--service-glow:rgba(255,115,63,.47)}
+.service-visual--analytics{--service-glow:rgba(33,225,223,.45)}
+.service-visual--wellness{--service-glow:rgba(196,255,30,.38)}
+.service-visual:focus-visible{box-shadow:0 0 0 3px rgba(255,255,255,.85),0 0 0 7px rgba(0,0,0,.55)!important}
+
+/* The image itself is the CTA now. */
+.scene.has-service-details .service-actions{display:none!important}
+
+@media (hover:hover) and (pointer:fine){
+  .service-visual:hover > img,
+  .service-visual:hover > picture,
+  .service-visual:hover > picture > img,
+  .service-visual:focus-visible > img,
+  .service-visual:focus-visible > picture,
+  .service-visual:focus-visible > picture > img{
+    transform:rotateY(88deg) scale(.985)!important;
+    opacity:.04!important;
+  }
+  .service-visual:hover .service-info-back,
+  .service-visual:focus-visible .service-info-back{
+    transform:rotateY(0) scale(1);
+    opacity:1;
+  }
+}
+
+/* Mobile: no hover. A restrained pulse invites a tap; tap opens the full card. */
+@media (max-width:760px){
+  .scene.has-service-details .branch-logo-slot{
+    width:clamp(122px,34vw,158px)!important;
+    margin-left:0!important;
+    padding:11%;
+  }
+  .analytics .m-head .branch-logo-slot{margin-left:0!important}
+  .service-info-back{display:none!important}
+  .service-visual::after{
+    content:"TOCA ↗";
+    position:absolute;
+    z-index:13;
+    right:10px;
+    bottom:10px;
+    padding:7px 10px 6px;
+    border-radius:999px;
+    background:rgba(10,10,10,.78);
+    color:#fff;
+    font-size:9px;
+    font-weight:800;
+    letter-spacing:.12em;
+    pointer-events:none;
+    backdrop-filter:blur(6px);
+  }
+  .service-visual-mobile{
+    animation:dvpTapInvite 4.6s cubic-bezier(.22,.75,.24,1) infinite;
+    transform-origin:center;
+  }
+  #management .m-photo-block{transform:rotate(-3deg)!important}
+}
+@keyframes dvpTapInvite{
+  0%,70%,100%{translate:0 0;scale:1}
+  76%{translate:0 -5px;scale:1.008}
+  82%{translate:0 1px;scale:.998}
+  88%{translate:0 -2px;scale:1.003}
+}
+@media (prefers-reduced-motion:reduce){
+  .service-visual-mobile{animation:none!important}
+  .service-visual > img,.service-info-back{transition:none!important}
+}
