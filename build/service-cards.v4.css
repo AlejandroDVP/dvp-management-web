@@ -1,0 +1,21 @@
+/* DVP service-card hotfix v4 — preserve layout, force approved Football Management image */
+#management .management-photo,
+#management .m-photo-block{
+  background-image:url("../assets/management-motion-approved-v3.webp?v=4")!important;
+  background-size:cover!important;
+  background-position:72% 50%!important;
+  background-repeat:no-repeat!important;
+}
+#management .management-photo>img,
+#management .m-photo-block>img{
+  opacity:0!important;
+  visibility:hidden!important;
+}
+#management .management-photo::after{z-index:2!important}
+#management .dvp-card-back{z-index:5!important}
+.scene.has-service-details .service-open{display:none!important}
+.dvp-service-card{cursor:pointer}
+@media (hover:hover) and (pointer:fine){.dvp-service-card:hover{translate:0 -4px}}
+@media (max-width:760px){.dvp-service-card{animation:dvpTapInviteV4 4.8s cubic-bezier(.22,.75,.24,1) infinite}}
+@keyframes dvpTapInviteV4{0%,72%,100%{translate:0 0}80%{translate:0 -5px}87%{translate:0 1px}}
+@media (prefers-reduced-motion:reduce){.dvp-service-card{animation:none!important}}
