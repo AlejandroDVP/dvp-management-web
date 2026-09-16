@@ -1,0 +1,53 @@
+name: Inline approved Football Management image
+
+on:
+  push:
+    paths:
+      - '.github/workflows/inline-management-image.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Inline approved image in homepage
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import base64
+
+          html = Path('index.html')
+          s = html.read_text(encoding='utf-8')
+          asset = Path('assets/management-motion-approved-v3.webp')
+          data = base64.b64encode(asset.read_bytes()).decode('ascii')
+          uri = 'data:image/webp;base64,' + data
+
+          # Make the approved image self-contained in the homepage so it cannot fail
+          # because of CDN/browser asset caching. This only affects Football Management.
+          s = s.replace('src="assets/management-motion-approved-v3.webp"', f'src="{uri}"')
+          s = s.replace('src="assets/management-motion-approved.webp"', f'src="{uri}"')
+          s = s.replace('src="assets/jugada.webp"', f'src="{uri}"')
+
+          # The scene is reached through a transformed atlas; eager avoids lazy-load edge cases.
+          s = s.replace(f'loading="lazy" src="{uri}"', f'loading="eager" src="{uri}"')
+
+          html.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Commit fix
+        shell: bash
+        run: |
+          git config user.name "DVP Web Update"
+          git config user.email "alejandro@dvp.football"
+          git add index.html
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "fix: inline approved Football Management image"
+          git push origin HEAD:main
