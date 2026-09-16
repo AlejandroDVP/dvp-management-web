@@ -1,0 +1,102 @@
+name: Apply DVP V11 interaction update
+
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-v11.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Patch homepage experience
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+
+          if 'build/experience.css' not in s:
+              s=s.replace('</head>','<link href="build/experience.css" rel="stylesheet"/><script defer src="build/experience.js"></script></head>')
+
+          # Approved image for the second section (Football Management).
+          s=s.replace('assets/jugada.webp','assets/management-motion-approved.webp')
+
+          # Public-facing service summaries: clear, but intentionally not operationally revealing.
+          replacements={
+            'Representación deportiva: contratos, renovaciones y transferencias. Diseñamos contigo el plan de tu carrera y te acompañamos en la relación con tu club.':'Representación y estrategia deportiva para acompañar decisiones clave de tu carrera con una visión de largo plazo.',
+            'Planeación de ahorro e inversión, análisis de proyectos y organización patrimonial. Decide con información y prepara tu vida después del fútbol.':'Orden, visión y acompañamiento para proyectar el patrimonio que construyes durante tu carrera.',
+            'Estrategia de marca personal, contenido y oportunidades comerciales. Construimos una presencia coherente y conectamos tu perfil con marcas que encajen contigo.':'Posicionamiento, imagen y oportunidades comerciales alineadas con tu identidad y tu carrera.',
+            'Videoanálisis de tus partidos, lectura táctica y seguimiento de rendimiento. Revisamos tus decisiones y trabajamos contigo un plan de mejora.':'Una lectura independiente de tu juego para comprender mejor tu rendimiento y orientar tu evolución.',
+            'Psicología deportiva, nutrición personalizada y preparación física y técnica. Especialistas coordinados alrededor de tu rendimiento y tu bienestar.':'Un enfoque integral de bienestar y rendimiento, adaptado a tu momento y a tus necesidades.'
+          }
+          for a,b in replacements.items(): s=s.replace(a,b)
+
+          dialogs={
+          'management':('DVP Football Management','Representación y estrategia deportiva para acompañar las decisiones que marcan una carrera.',[
+            ('Carrera y representación','Acompañamiento en decisiones contractuales, deportivas y de mercado.'),
+            ('Oportunidades','Lectura de escenarios y oportunidades dentro de una visión de largo plazo.'),
+            ('Coordinación','Un punto de apoyo para activar las áreas que el jugador decida necesitar.')],
+            'El alcance se define con cada jugador y se formaliza conforme a la normativa aplicable.','assets/management-black-hd.webp'),
+          'wealth':('DVP Wealth Consulting','Una estructura para ordenar y proyectar el patrimonio construido durante la carrera deportiva.',[
+            ('Visión patrimonial','Orden y objetivos de largo plazo alrededor del patrimonio del jugador.'),
+            ('Decisiones','Acompañamiento para evaluar oportunidades con mayor contexto.'),
+            ('Futuro','Planificación orientada a ampliar opciones más allá de la etapa deportiva.')],
+            'El servicio se estructura según las necesidades del jugador y puede involucrar especialistas independientes.','assets/wealth-black-hd.webp'),
+          'publicity':('DVP Publicity','Una plataforma de posicionamiento para construir una marca personal coherente, valiosa y sostenible.',[
+            ('Posicionamiento','Una dirección de marca alineada con la identidad y la carrera del jugador.'),
+            ('Oportunidades','Evaluación de colaboraciones y proyectos compatibles con su perfil.'),
+            ('Ejecución','Coordinación de contenido y activaciones cuando corresponde.')],
+            'Cada oportunidad está sujeta a encaje de marca, derechos, club, patrocinadores y aprobación del jugador.','assets/publicity-black-hd.webp'),
+          'analytics':('DVP Analytics','Una lectura independiente del juego para aportar contexto y orientar la evolución deportiva.',[
+            ('Lectura del juego','Análisis del rendimiento dentro del contexto del jugador y del partido.'),
+            ('Seguimiento','Observación de tendencias y evolución a lo largo del tiempo.'),
+            ('Prioridades','Hallazgos convertidos en conversaciones y prioridades de trabajo.')],
+            'El análisis complementa el trabajo del club y se adapta al momento deportivo de cada jugador.','assets/analytics-black-hd.webp'),
+          'wellness':('DVP Wellness','Cuerpo. Cabeza. Fútbol. Un enfoque integral de bienestar y rendimiento alrededor del jugador.',[
+            ('Rendimiento integral','Recursos para cuerpo y mente según la etapa y las necesidades del jugador.'),
+            ('Especialistas','Acceso coordinado a perfiles adecuados cuando el jugador decide activarlos.'),
+            ('Seguimiento','Un enfoque individual y complementario al trabajo cotidiano del club.')],
+            'Los servicios especializados se definen caso por caso y pueden requerir contratación independiente.','assets/wellness-white.png')
+          }
+
+          for key,(title,intro,items,conditions,logo) in dialogs.items():
+              rows=''.join(f'<div><dt>{dt}</dt><dd>{dd}</dd></div>' for dt,dd in items)
+              reverse=' class="reverse-logo"' if key=='wellness' else ''
+              contact=f'https://wa.me/525543417223?text=Hola%2C%20DVP.%20Me%20gustar%C3%ADa%20conocer%20{title.replace(" ","%20")}.'
+              html=(f'<dialog aria-labelledby="detail-{key}" class="service-dialog" id="service-{key}">'
+                    f'<div class="service-dialog-top"><img alt=""{reverse} decoding="async" src="{logo}"/>'
+                    f'<button aria-label="Cerrar servicios" data-service-close="" type="button">Cerrar ×</button></div>'
+                    f'<h2 id="detail-{key}">{title}</h2><p class="service-intro">{intro}</p>'
+                    f'<dl class="service-list">{rows}</dl><p class="service-conditions">{conditions}</p>'
+                    f'<a class="service-contact" href="{contact}" rel="noopener noreferrer" target="_blank">Hablemos de {title} ↗</a></dialog>')
+              s=re.sub(rf'<dialog\b[^>]*id="service-{key}"[^>]*>.*?</dialog>',html,s,flags=re.S)
+
+          s=s.replace('V10 · HTML-first / SEO and original content candidate','V11 · interactive service cards + official gradient orb system')
+          p.write_text(s,encoding='utf-8')
+          PY
+
+      - name: Commit homepage update
+        shell: bash
+        run: |
+          git config user.name "DVP Web Update"
+          git config user.email "alejandro@dvp.football"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "No homepage changes"
+            exit 0
+          fi
+          git commit -m "feat: implement V11 service experience"
+          git push origin HEAD:main
