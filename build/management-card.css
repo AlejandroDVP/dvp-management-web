@@ -1,0 +1,106 @@
+/* DVP — surgical Football Management card enhancement. No layout overrides. */
+#management .management-photo,
+#management .m-photo-block{
+  position:relative;
+  cursor:pointer;
+  overflow:hidden;
+  perspective:1000px;
+  outline:none;
+}
+#management .management-photo > img,
+#management .m-photo-block > img{
+  transition:opacity .34s ease, transform .48s cubic-bezier(.22,.75,.24,1), filter .34s ease;
+  backface-visibility:hidden;
+}
+#management .management-card-back{
+  position:absolute;
+  inset:0;
+  z-index:5;
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  padding:clamp(22px,2.5vw,38px);
+  color:#f3f1e8;
+  background:
+    radial-gradient(circle at 78% 18%,rgba(195,255,52,.20),transparent 34%),
+    linear-gradient(145deg,rgba(9,14,13,.96),rgba(12,18,14,.86));
+  border:1px solid rgba(255,255,255,.14);
+  opacity:0;
+  transform:rotateY(-88deg);
+  transform-origin:center;
+  transition:opacity .32s ease, transform .48s cubic-bezier(.22,.75,.24,1);
+  backface-visibility:hidden;
+  pointer-events:none;
+}
+#management .management-card-back small{
+  margin-bottom:10px;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  opacity:.66;
+}
+#management .management-card-back strong{
+  max-width:13ch;
+  font-size:clamp(25px,3vw,46px);
+  line-height:.95;
+  letter-spacing:-.03em;
+  text-transform:uppercase;
+}
+#management .management-card-back p{
+  max-width:35ch;
+  margin:14px 0 0;
+  font-size:clamp(13px,1.05vw,16px);
+  line-height:1.45;
+  opacity:.82;
+}
+#management .management-card-back span{
+  margin-top:16px;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.11em;
+  text-transform:uppercase;
+}
+@media (hover:hover) and (pointer:fine){
+  #management .management-photo:hover > img,
+  #management .management-photo:focus-visible > img{
+    opacity:.04;
+    transform:rotateY(88deg) scale(.99);
+  }
+  #management .management-photo:hover .management-card-back,
+  #management .management-photo:focus-visible .management-card-back{
+    opacity:1;
+    transform:rotateY(0);
+  }
+}
+@media (max-width:760px){
+  #management .management-card-back{display:none}
+  #management .m-photo-block::after{
+    content:"TOCA ↗";
+    position:absolute;
+    right:10px;
+    bottom:10px;
+    z-index:6;
+    padding:7px 10px 6px;
+    border-radius:999px;
+    color:#fff;
+    background:rgba(10,10,10,.75);
+    font-size:9px;
+    font-weight:800;
+    letter-spacing:.11em;
+    pointer-events:none;
+  }
+  #management .m-photo-block{animation:dvpManagementInvite 4.8s cubic-bezier(.22,.75,.24,1) infinite}
+}
+@keyframes dvpManagementInvite{
+  0%,72%,100%{translate:0 0}
+  79%{translate:0 -5px}
+  85%{translate:0 1px}
+  91%{translate:0 -2px}
+}
+@media (prefers-reduced-motion:reduce){
+  #management .m-photo-block{animation:none}
+  #management .management-photo > img,
+  #management .management-card-back{transition:none}
+}
