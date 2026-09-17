@@ -1,0 +1,80 @@
+/* Match the camera and the scroll endpoint to the visible browser height. */
+body.cinematic .viewport { height:var(--frame-h); }
+/* Hash/focus navigation must not scroll inside the transformed camera. */
+body.cinematic .viewport, body.cinematic .scene { overflow:clip; }
+.journey { overflow-anchor:none; }
+/* Mobile scenes share one budget for the header, content and safe-area controls. */
+@media (max-width:760px), (pointer:coarse) and (max-width:1024px) and (max-height:619px) {
+  :root {
+    --header-h:calc(80px + env(safe-area-inset-top, 0px));
+    --mobile-content-bottom:calc(76px + env(safe-area-inset-bottom, 0px));
+  }
+  .mobile-layout,
+  .has-service-details .mobile-layout,
+  .contact .mobile-layout {
+    padding-top:calc(90px + env(safe-area-inset-top, 0px));
+    padding-bottom:var(--mobile-content-bottom);
+    gap:12px;
+  }
+  .hero-unified {
+    padding-top:calc(94px + env(safe-area-inset-top, 0px));
+    padding-bottom:var(--mobile-content-bottom);
+  }
+  .journey-hud {
+    height:calc(64px + env(safe-area-inset-bottom, 0px));
+    min-height:64px;
+    padding-top:8px!important;
+    padding-bottom:calc(12px + env(safe-area-inset-bottom, 0px))!important;
+  }
+  /* Desktop offsets must never move these logos out of the mobile header. */
+  .scene .m-head .closing-brand-home {
+    position:relative;
+    inset:auto;
+    width:180px;
+    height:54px;
+    max-width:68%;
+    margin:0 0 14px;
+  }
+  .global .m-title,
+  .contact .m-title {
+    margin-top:0!important;
+    font-size:clamp(42px, min(15vw, 7.4svh), 68px)!important;
+    line-height:1!important;
+  }
+  .global .mobile-layout { grid-template-rows:auto minmax(150px, 1fr) auto; }
+  .global .m-body>p { font-size:15px; line-height:1.5; }
+  .m-market { font-size:9px; }
+  .contact .mobile-layout { grid-template-rows:auto minmax(60px, 1fr) auto; gap:10px; }
+  .contact .m-contact-art { min-height:60px; }
+  .contact .m-team-word {
+    position:relative;
+    top:auto;
+    display:block;
+    padding-top:5px;
+    font-size:clamp(24px, 7.4vw, 36px);
+  }
+  .contact .m-contact-orbit { right:0; top:0; height:100%; width:55%; }
+  .contact .m-contact-primary {
+    min-height:62px;
+    padding:12px 15px;
+    font-size:16px;
+    margin-bottom:4px;
+  }
+  .contact .m-contact-body>a:not(.m-contact-primary) {
+    min-height:44px;
+    padding:10px 0;
+    font-size:14px;
+  }
+  .contact .m-contact-legal { margin-top:4px; gap:10px; }
+  .contact .m-contact-legal>span { font-size:9px; }
+  .contact .m-contact-legal button { font-size:11px; min-height:44px; }
+  .contact .trust-links { margin-top:2px; gap:0 14px; }
+  .contact .trust-links a { display:flex; align-items:center; min-height:44px; }
+  /* Short screens and enlarged text retain a complete, naturally scrolling page. */
+  body:not(.cinematic) .contact .mobile-layout {
+    min-height:0;
+    grid-template-rows:auto minmax(90px, auto) auto;
+    gap:24px;
+  }
+  body:not(.cinematic) .contact { min-height:0; }
+}
