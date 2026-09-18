@@ -184,16 +184,22 @@ window.mountDvpMobile = function mountDvpMobile() {
     });
   }
 
+  // Phones: a finger expects the page to follow it. Rest zones shrink to a short
+  // slack (the settle needs one) and every travel is exactly one frame of scroll,
+  // so the camera tracks the thumb 1:1 instead of pausing and then rushing.
+  const PHONE_HOLD_SCALE=.4, PHONE_TRAVEL=1;
   function buildTimeline() {
     let t = 0;
     segments = []; stops = [];
     scenes.forEach((scene,i) => {
-      stops.push(t + (i === 0 ? 0 : holds[i]*.35));
-      segments.push({kind:'hold',start:t,end:t+holds[i],from:i,to:i});
-      t += holds[i];
+      const hold=phone() ? holds[i]*PHONE_HOLD_SCALE : holds[i];
+      const travel=phone() ? (travels[i] ? PHONE_TRAVEL : 0) : travels[i];
+      stops.push(t + (i === 0 ? 0 : hold*.35));
+      segments.push({kind:'hold',start:t,end:t+hold,from:i,to:i});
+      t += hold;
       if (i < scenes.length-1) {
-        segments.push({kind:'travel',start:t,end:t+travels[i],from:i,to:i+1});
-        t += travels[i];
+        segments.push({kind:'travel',start:t,end:t+travel,from:i,to:i+1});
+        t += travel;
       }
       scene.style.setProperty('--scene-x',`${positions[i][0]*frameW}px`);
       scene.style.setProperty('--scene-y',`${positions[i][1]*frameH}px`);
@@ -236,13 +242,15 @@ window.mountDvpMobile = function mountDvpMobile() {
     const p = clamp(scrollY/frameH,0,total);
     const seg = segments.find(s => p >= s.start && p < s.end) || segments[segments.length-1];
     const local = seg.end>seg.start ? clamp((p-seg.start)/(seg.end-seg.start),0,1) : 1;
-    const t = seg.kind==='travel' ? ease(local) : 0;
+    // Desktop eases each travel (the wheel is stepped and the lerp smooths it).
+    // Phones map the travel linearly: native touch scrolling already has inertia.
+    const t = seg.kind==='travel' ? (phone() ? local : ease(local)) : 0;
     const a=positions[seg.from], b=positions[seg.to];
     const wave=seg.kind==='travel' ? Math.sin(local*Math.PI) : 0;
     return {
       from:seg.from,to:seg.to,t,local,wave,
       x:lerp(a[0],b[0],t),y:lerp(a[1],b[1],t),
-      scale:1-wave*wave*.034,
+      scale:phone() ? 1 : 1-wave*wave*.034,
       index:seg.kind==='travel'&&t>.5 ? seg.to : seg.from,
       direction:Math.atan2((b[1]-a[1])*frameH,(b[0]-a[0])*frameW)
     };
@@ -310,12 +318,12 @@ window.mountDvpMobile = function mountDvpMobile() {
   function scheduleSettle(){
     clearTimeout(scrollEndTimer);
     if(settleRaf)return;
-    scrollEndTimer=setTimeout(settleIfIdle,140);
+    scrollEndTimer=setTimeout(settleIfIdle,90);
   }
   function settleIfIdle(){
     scrollEndTimer=0;
     if(!cinematic||!phone()||touching||document.hidden)return;
-    if(performance.now()-lastScrollAt<120){scheduleSettle();return;}
+    if(performance.now()-lastScrollAt<80){scheduleSettle();return;}
     const p=poseAt(targetY);
     if(p.from===p.to||p.local<.03||p.local>.97)return;
     settleTo(p.local<.5?p.from:p.to);
@@ -324,12 +332,13 @@ window.mountDvpMobile = function mountDvpMobile() {
     const startY=window.scrollY, endY=journey.offsetTop+stops[index]*frameH;
     const distance=endY-startY;
     if(Math.abs(distance)<1)return;
-    const duration=clamp(Math.abs(distance)*.9,260,520);
+    const duration=clamp(Math.abs(distance)*.7,180,360);
     const t0=performance.now();
+    const easeOut=k=>1-Math.pow(1-k,3); // Starts at full speed: continues the fling, never restarts it.
     const step=now=>{
       settleRaf=0;
       if(touching){return;}
-      const k=ease(clamp((now-t0)/duration,0,1));
+      const k=easeOut(clamp((now-t0)/duration,0,1));
       window.scrollTo(0,startY+distance*k);
       if(k<1)settleRaf=requestAnimationFrame(step);
     };
