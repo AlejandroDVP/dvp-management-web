@@ -46,6 +46,32 @@ Configuración esperada:
 
 El archivo `vercel.json` ya contiene headers, clean URLs y redirects del sitio.
 
+## Cómo cambiar CSS o JS
+
+Los archivos de `build/` se sirven con caché inmutable de un año (`vercel.json`), así que **nunca se editan en su lugar**: se editan y después se renombran con su hash de contenido. El script lo hace y actualiza las referencias en todas las páginas:
+
+```bash
+sh tools/rehash.sh
+```
+
+Mapa de archivos de la portada (`index.html`):
+
+- `build/styles.*.css`: estilos base (desktop y móvil).
+- `build/mobile-layout.*.css`: ajustes móviles y la cámara en teléfonos (se carga al final, gana la cascada).
+- `build/service-cards.*.css/.js`: tarjetas de servicio que abren los diálogos.
+- `build/management-full-card.*.css`: arte completo de la tarjeta de Management.
+- `build/app.*.js`: la cámara cinemática (`mountDvpMobile`). Expone `window.dvpExperience` (`status()`, `goTo(id)`, `refresh()`) para revisión visual.
+
+Las páginas de servicio usan solo `build/services.*.css`.
+
+### Comportamiento en teléfonos
+
+- La cámara cinemática se mantiene. El marco se fija al viewport pequeño (`100svh`), por lo que la barra del navegador nunca reconstruye el recorrido.
+- Al terminar un desplazamiento a mitad de viaje, la cámara se acomoda sola en la escena más cercana.
+- Los vectores voladores (logo rebotando, globo y logotipo viajeros) solo existen en escritorio; en teléfonos cada escena muestra su logotipo y globo estáticos.
+- Si la pantalla es baja, el contenido se compacta (`frame-compact`, `frame-tight`) o se escala (`--layout-scale`) antes de renunciar a la cámara.
+- El botón **Pausar** solo detiene las animaciones decorativas; nunca desactiva la cámara. La vista de lectura sigue disponible con «Leer sin movimiento», `?view=calm` o `prefers-reduced-motion`.
+
 ## SEO
 
 - `robots.txt` permite rastreo y referencia `https://dvp.football/sitemap.xml`.
