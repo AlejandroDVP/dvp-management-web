@@ -1,3 +1,7 @@
+/* DVP home page script. Sections are the former separate files, in execution order.
+   Edit, then run: sh tools/rehash.sh */
+
+/* ===== Cinematic camera (was build/app.009f9d5fa7aa.js) ===== */
 /* DVP V3 — native vertical scrolling drives a two-axis editorial camera.
    No wheel/touch interception, no required horizontal gesture, no dependencies. */
 window.mountDvpMobile = function mountDvpMobile() {
@@ -19,9 +23,25 @@ window.mountDvpMobile = function mountDvpMobile() {
   const indexButton = document.getElementById('open-index');
   let reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const STORAGE_KEY = 'dvp-v7-motion';
-  const positions = [[0,0],[0,1],[1,1],[1,2],[2,2],[2,1],[3,1],[3,2]];
-  const holds = [.18,.52,.60,.55,.48,.67,.50,0];
-  const travels = [.95,.92,.96,.94,.97,.96,1.02,0];
+  // The timeline is keyed by scene id (like the globe poses below), so adding,
+  // removing or reordering a <section class="scene"> never desynchronises the camera.
+  // pos: atlas cell [column,row]; hold: frames the camera rests on the scene;
+  // travel: frames spent flying to the next scene (phones override both, see buildTimeline).
+  const timelineById={
+    inicio:{pos:[0,0],hold:.18,travel:.95},
+    management:{pos:[0,1],hold:.52,travel:.92},
+    wealth:{pos:[1,1],hold:.60,travel:.96},
+    publicity:{pos:[1,2],hold:.55,travel:.94},
+    analytics:{pos:[2,2],hold:.48,travel:.97},
+    wellness:{pos:[2,1],hold:.67,travel:.96},
+    mundo:{pos:[3,1],hold:.50,travel:1.02},
+    contacto:{pos:[3,2],hold:0,travel:0}
+  };
+  scenes.forEach(s=>{if(!timelineById[s.id])console.error('DVP: la escena "'+s.id+'" no tiene entrada en timelineById; la cámara no la conoce.');});
+  const timeline=scenes.map(s=>timelineById[s.id] || {pos:[0,0],hold:.5,travel:.95});
+  const positions = timeline.map(t=>t.pos);
+  const holds = timeline.map(t=>t.hold);
+  const travels = timeline.map(t=>t.travel);
   // Poses are keyed by scene, so changing editorial order never changes a destination.
   const desktopGlobeById={inicio:[.923,.34,98,0],management:[.88,.28,93,1],wealth:[.28,.55,145,0],publicity:[.87,.72,108,0],analytics:[.37,.66,83,1],wellness:[.236,.50,113,1],mundo:[.417,.73,115,1],contacto:[.87,.32,120,0]};
   const globeDesktop=scenes.map(s=>desktopGlobeById[s.id]);
@@ -643,3 +663,53 @@ window.mountDvpMobile = function mountDvpMobile() {
    parsed by now and the motion layer can mount directly (no framework needed). */
 window.dvpUnmount = window.mountDvpMobile();
 
+/* ===== Service cards (runs after the camera has wired the dialogs) (was build/service-cards.016f4a5fee28.js) ===== */
+(()=>{
+  'use strict';
+  const configs=[
+    {key:'management',desktop:'.management-photo',mobile:'.m-photo-block',title:'DVP Football Management',headline:'Tu carrera, acompañada.',summary:'Representación y estrategia deportiva para acompañar las decisiones que marcan cada etapa de tu carrera.'},
+    {key:'wealth',desktop:'.wealth-photo',mobile:'.organic-wealth',title:'DVP Wealth Consulting',headline:'Construye también fuera del campo.',summary:'Una visión ordenada para proteger y proyectar el patrimonio que construyes durante tu carrera.'},
+    {key:'publicity',desktop:'.publicity-one',mobile:'.m-pub-one',title:'DVP Publicity',headline:'Tu imagen también juega.',summary:'Posicionamiento, imagen y oportunidades comerciales alineadas con tu identidad y tu carrera.'},
+    {key:'analytics',desktop:'.analysis-visual',mobile:'.m-analytics-art',title:'DVP Analytics',headline:'Entender para evolucionar.',summary:'Una lectura independiente de tu juego para aportar contexto a tu rendimiento y a tu evolución.'},
+    {key:'wellness',desktop:'.wellness-photo',mobile:'.organic-wellness',title:'DVP Wellness',headline:'Cuerpo. Cabeza. Fútbol.',summary:'Un enfoque integral de bienestar y rendimiento alrededor del jugador y de sus necesidades.'}
+  ];
+
+  const openService=(key,scene)=>{
+    const trigger=scene?.querySelector(`.service-open[data-service-open="${key}"]`);
+    if(trigger){trigger.click();return;}
+    const dialog=document.getElementById(`service-${key}`);
+    if(dialog && typeof dialog.showModal==='function' && !dialog.open){dialog.showModal();return;}
+    const fallback={management:'representacion-futbolistas/',wealth:'patrimonio-futbolistas/',publicity:'marca-personal-futbolistas/',analytics:'videoanalisis-futbolistas/',wellness:'bienestar-futbolistas/'}[key];
+    if(fallback) location.href=fallback;
+  };
+
+  const prepareCard=(card,cfg,scene,isMobile=false)=>{
+    if(!card || card.dataset.dvpCardReady==='1') return;
+    card.dataset.dvpCardReady='1';
+    card.classList.add('dvp-service-card',`dvp-card-${cfg.key}`);
+    if(getComputedStyle(card).position==='static') card.style.position='relative';
+    card.removeAttribute('aria-hidden');
+    card.setAttribute('role','button');
+    card.setAttribute('tabindex','0');
+    card.setAttribute('aria-label',`Abrir información de ${cfg.title}`);
+
+    if(!isMobile){
+      const back=document.createElement('div');
+      back.className='dvp-card-back';
+      back.setAttribute('aria-hidden','true');
+      back.innerHTML=`<small>${cfg.title}</small><strong>${cfg.headline}</strong><p>${cfg.summary}</p><span>Haz clic para conocer más ↗</span>`;
+      card.appendChild(back);
+    }
+
+    const open=()=>openService(cfg.key,scene);
+    card.addEventListener('click',open);
+    card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
+  };
+
+  configs.forEach(cfg=>{
+    const scene=document.getElementById(cfg.key);
+    if(!scene) return;
+    prepareCard(scene.querySelector(cfg.desktop),cfg,scene,false);
+    prepareCard(scene.querySelector(cfg.mobile),cfg,scene,true);
+  });
+})();
