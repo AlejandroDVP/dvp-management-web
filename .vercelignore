@@ -1,7 +1,7 @@
 .git/
-.github/
 .gitignore
 README.md
+tools/
 .DS_Store
 *.log
 .env*

@@ -12,7 +12,7 @@ Sitio web oficial de **DVP Management** para `https://dvp.football`.
 
 ## Arquitectura
 
-El sitio es una web estática multipágina con HTML, CSS y JavaScript. La portada conserva las animaciones y el recorrido visual de DVP; las páginas de servicio añaden contenido rastreable para SEO.
+El sitio es una web estática multipágina con HTML, CSS y JavaScript, sin frameworks ni proceso de build. La portada conserva las animaciones y el recorrido visual de DVP; las páginas de servicio añaden contenido rastreable para SEO.
 
 ### URLs principales
 
@@ -54,15 +54,12 @@ Los archivos de `build/` se sirven con caché inmutable de un año (`vercel.json
 sh tools/rehash.sh
 ```
 
-Mapa de archivos de la portada (`index.html`):
+Mapa de archivos:
 
-- `build/styles.*.css`: estilos base (desktop y móvil).
-- `build/mobile-layout.*.css`: ajustes móviles y la cámara en teléfonos (se carga al final, gana la cascada).
-- `build/service-cards.*.css/.js`: tarjetas de servicio que abren los diálogos.
-- `build/management-full-card.*.css`: arte completo de la tarjeta de Management.
-- `build/app.*.js`: la cámara cinemática (`mountDvpMobile`). Expone `window.dvpExperience` (`status()`, `goTo(id)`, `refresh()`) para revisión visual.
-
-Las páginas de servicio usan solo `build/services.*.css`.
+- `build/home.*.css`: toda la hoja de la portada, en secciones (estilos base, tarjetas de servicio, arte de Management, layout y cámara en teléfonos). Las secciones conservan el orden de cascada de los archivos que reemplazan; la última (teléfonos) gana.
+- `build/home.*.js`: la cámara cinemática (`mountDvpMobile`) seguida de las tarjetas de servicio. Expone `window.dvpExperience` (`status()`, `goTo(id)`, `refresh()`) para revisión visual. El recorrido se define en `timelineById`, por id de escena.
+- `build/services.*.css`: la única hoja de las siete páginas de servicio.
+- Sin dependencias: no hay framework ni carpeta `vendor/`.
 
 ### Comportamiento en teléfonos
 

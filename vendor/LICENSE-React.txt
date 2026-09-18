@@ -1,4 +1,0 @@
-React
-Copyright (c) Meta Platforms, Inc. and affiliates.
-Licensed under the MIT License.
-See https://github.com/facebook/react/blob/main/LICENSE
