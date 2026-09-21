@@ -1,6 +1,6 @@
 /* DVP service cards v3 — interaction only; never changes authored layouts. */
-.scene.has-service-details .service-open{display:none!important}
-#management .service-actions{display:none!important}
+body.js-ready .scene.has-service-details .service-open{display:none!important}
+body.js-ready #management .service-actions{display:none!important}
 
 .dvp-service-card{
   cursor:pointer;

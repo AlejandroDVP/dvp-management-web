@@ -28,7 +28,15 @@ window.mountDvpMobile = function mountDvpMobile() {
   const globeTablet=globeDesktop.map(p=>[p[0],p[1],p[2]*.73,p[3]]);
   const primaryLogoHome = document.querySelector('[data-primary-logo-home]');
   let cinematic = false;
-  let userCalm = false;
+  let userCalm = false;   // "Leer sin movimiento": whole page as a plain document.
+  let userPaused = false; // "Pausar": decorative animations off, camera stays.
+  // Phones: the camera stays, the flying vectors (bouncing wordmark, globe and
+  // brand travelers, transition line) are skipped and the frame is locked to the
+  // small viewport so browser toolbars never rebuild the journey mid-scroll.
+  const PHONE_MAX_W = 760;
+  const phone = () => frameW <= PHONE_MAX_W;
+  let settleRaf = 0, scrollEndTimer = 0, touching = false, lastScrollAt = 0;
+  let calmReason = ''; // Why reading mode was chosen; visible in dvpExperience.status().
   let frameW = 0;
   let frameH = 0;
   let targetY = 0;
@@ -51,7 +59,13 @@ window.mountDvpMobile = function mountDvpMobile() {
   const lerp = (a,b,t) => a+(b-a)*t;
   const ease = t => t*t*(3-2*t);
   const safeStore = v => {try {localStorage.setItem(STORAGE_KEY,v);} catch (_) { /* Private mode remains usable. */ }};
-  try {userCalm = localStorage.getItem(STORAGE_KEY) === 'calm';} catch (_) {}
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    // Older builds stored 'calm' when "Pausar" was pressed, which silently
+    // removed the camera on every later visit. That value now only pauses.
+    userPaused = stored === 'paused' || stored === 'calm';
+    userCalm = stored === 'reader';
+  } catch (_) {}
 
   const brandLayer=document.getElementById('brand-traveler');
   const brandFrom=document.getElementById('brand-from');
@@ -88,6 +102,7 @@ window.mountDvpMobile = function mountDvpMobile() {
     }) : frameW<=900 ? globeTablet : globeDesktop;
   }
   function renderBrand(p){
+    if(phone())return;
     const a=brandAnchors[p.from],b=brandAnchors[p.to];
     if(!a||!b)return;
     const key=a.src+'|'+b.src;
@@ -110,7 +125,7 @@ window.mountDvpMobile = function mountDvpMobile() {
     // Honor a preference change on the next animation frame even when an
     // embedded browser does not dispatch MediaQueryList.change reliably.
     if(reduceMotion.matches && cinematic){setMode(true);return;}
-    if(document.hidden||userCalm||reduceMotion.matches||body.classList.contains('service-reading'))return;
+    if(document.hidden||userCalm||userPaused||phone()||reduceMotion.matches||body.classList.contains('service-reading'))return;
     const dt=dvdLast?Math.min((now-dvdLast)/1000,.055):0;dvdLast=now;
     const minX=16,maxX=Math.max(minX,frameW-dvdWidth-16);
     const minY=(frameW<=760?78:100),maxY=Math.max(minY,frameH-dvdHeight-78);
@@ -124,7 +139,7 @@ window.mountDvpMobile = function mountDvpMobile() {
   }
   function syncDvd(){
     if(dvdRaf)cancelAnimationFrame(dvdRaf);dvdRaf=0;dvdLast=0;
-    if(!document.hidden&&!userCalm&&!reduceMotion.matches)dvdRaf=requestAnimationFrame(dvdFrame);
+    if(!document.hidden&&!userCalm&&!userPaused&&!phone()&&!reduceMotion.matches)dvdRaf=requestAnimationFrame(dvdFrame);
   }
 
   function measureViewport() {
@@ -138,30 +153,53 @@ window.mountDvpMobile = function mountDvpMobile() {
     return [document.documentElement.clientWidth,h,smallH];
   }
 
+  // Phones rarely have the condensed display font (the stack falls back to Arial or
+  // Roboto), so a headline can need heavy compression. Past this much horizontal
+  // squeeze the glyphs distort; the remainder is applied as a uniform shrink instead.
+  const MAX_SQUEEZE=.88;
   function fitHeadlines() {
     // The measurement is independent of glyph width, browser zoom and the camera transform.
-    // All headings have constrained containers in CSS even before React initializes.
-    document.querySelectorAll('[data-fit]').forEach(line => {
-      if(!line.getClientRects().length)return;
+    // All headings have constrained containers in CSS. Reads and writes are batched so
+    // the browser lays the page out once, not once per line.
+    const lines=[...document.querySelectorAll('[data-fit]')];
+    const ratios=lines.map(line => {
+      if(!line.getClientRects().length)return null;
       const parent=line.parentElement;
       const style=getComputedStyle(parent);
       const available=Math.max(1,Math.min(frameW-40,parent.clientWidth)-
         (parseFloat(style.paddingLeft)||0)-(parseFloat(style.paddingRight)||0)-3);
       const natural=line.scrollWidth || line.offsetWidth;
-      if(natural>0){line.style.setProperty('--fit',String(Math.min(1,available/natural)));}
+      return natural>0 ? Math.min(1,available/natural) : null;
+    });
+    lines.forEach((line,i) => {
+      const ratio=ratios[i];
+      if(ratio===null)return;
+      if(phone() && ratio<MAX_SQUEEZE){
+        line.style.setProperty('--fit',String(MAX_SQUEEZE));
+        line.style.setProperty('--fit-shrink',(ratio/MAX_SQUEEZE).toFixed(4));
+      }else{
+        line.style.setProperty('--fit',String(ratio));
+        line.style.setProperty('--fit-shrink','1');
+      }
     });
   }
 
+  // Phones: a finger expects the page to follow it. Rest zones shrink to a short
+  // slack (the settle needs one) and every travel is exactly one frame of scroll,
+  // so the camera tracks the thumb 1:1 instead of pausing and then rushing.
+  const PHONE_HOLD_SCALE=.4, PHONE_TRAVEL=1;
   function buildTimeline() {
     let t = 0;
     segments = []; stops = [];
     scenes.forEach((scene,i) => {
-      stops.push(t + (i === 0 ? 0 : holds[i]*.35));
-      segments.push({kind:'hold',start:t,end:t+holds[i],from:i,to:i});
-      t += holds[i];
+      const hold=phone() ? holds[i]*PHONE_HOLD_SCALE : holds[i];
+      const travel=phone() ? (travels[i] ? PHONE_TRAVEL : 0) : travels[i];
+      stops.push(t + (i === 0 ? 0 : hold*.35));
+      segments.push({kind:'hold',start:t,end:t+hold,from:i,to:i});
+      t += hold;
       if (i < scenes.length-1) {
-        segments.push({kind:'travel',start:t,end:t+travels[i],from:i,to:i+1});
-        t += travels[i];
+        segments.push({kind:'travel',start:t,end:t+travel,from:i,to:i+1});
+        t += travel;
       }
       scene.style.setProperty('--scene-x',`${positions[i][0]*frameW}px`);
       scene.style.setProperty('--scene-y',`${positions[i][1]*frameH}px`);
@@ -179,8 +217,13 @@ window.mountDvpMobile = function mountDvpMobile() {
     [index,Math.min(index+1,scenes.length-1)].forEach(i=>{
       scenes[i].querySelectorAll('img[loading="lazy"]').forEach(img=>{img.loading='eager';if(img.decode)img.decode().catch(()=>{});});
     });
+    // Phones keep only the current and next scene's images decoded; the rest may be evicted.
+    if(phone())scenes.forEach((scene,i)=>{if(Math.abs(i-index)>1)scene.querySelectorAll('img[loading="eager"]:not([fetchpriority])').forEach(img=>{img.loading='lazy';});});
     const scene = scenes[index];
     body.classList.toggle('ui-dark',scene.dataset.color === 'dark');
+    body.dataset.scene=scene.id; // Phones hide the header wordmark once a scene shows its own.
+    // Colour of the strip a collapsing phone toolbar reveals under the frame.
+    body.style.setProperty('--frame-fill',scene.dataset.color === 'dark' ? '#0f1a14' : '#dedfcc');
     numberLabel.textContent = String(index+1).padStart(2,'0');
     sceneLabel.textContent = scene.dataset.label;
     const next=document.getElementById('next-scene'); if(next){next.setAttribute('aria-label',index<scenes.length-1?'Ir a la siguiente sección':'Volver al inicio');next.innerHTML=index<scenes.length-1?'↓':'↑';}
@@ -201,13 +244,15 @@ window.mountDvpMobile = function mountDvpMobile() {
     const p = clamp(scrollY/frameH,0,total);
     const seg = segments.find(s => p >= s.start && p < s.end) || segments[segments.length-1];
     const local = seg.end>seg.start ? clamp((p-seg.start)/(seg.end-seg.start),0,1) : 1;
-    const t = seg.kind==='travel' ? ease(local) : 0;
+    // Desktop eases each travel (the wheel is stepped and the lerp smooths it).
+    // Phones map the travel linearly: native touch scrolling already has inertia.
+    const t = seg.kind==='travel' ? (phone() ? local : ease(local)) : 0;
     const a=positions[seg.from], b=positions[seg.to];
     const wave=seg.kind==='travel' ? Math.sin(local*Math.PI) : 0;
     return {
       from:seg.from,to:seg.to,t,local,wave,
       x:lerp(a[0],b[0],t),y:lerp(a[1],b[1],t),
-      scale:1-wave*wave*.034,
+      scale:phone() ? 1 : 1-wave*wave*.034,
       index:seg.kind==='travel'&&t>.5 ? seg.to : seg.from,
       direction:Math.atan2((b[1]-a[1])*frameH,(b[0]-a[0])*frameW)
     };
@@ -218,6 +263,19 @@ window.mountDvpMobile = function mountDvpMobile() {
     const p=poseAt(currentY);
     const cx=(p.x+.5)*frameW,cy=(p.y+.5)*frameH;
     const tx=frameW*.5-cx*p.scale,ty=frameH*.5-cy*p.scale;
+    if(phone()){
+      // Phones: the atlas is never transformed (a 4x3-frame layer is too large for a
+      // phone GPU and Safari rasterises its tiles mid-scroll). Only the one or two
+      // scenes that intersect the frame move, each as its own frame-sized layer.
+      const move=`translate3d(${tx.toFixed(2)}px,${ty.toFixed(2)}px,0)`;
+      scenes.forEach((scene,i) => {
+        const visible = Math.abs(positions[i][0]-p.x)<1 && Math.abs(positions[i][1]-p.y)<1;
+        scene.classList.toggle('is-near',visible);
+        if(visible)scene.style.transform=move;
+      });
+      activate(p.index);
+      return; // Static logos and globes on phones: nothing else moves.
+    }
     atlas.style.transform=`translate3d(${tx.toFixed(2)}px,${ty.toFixed(2)}px,0) scale(${p.scale.toFixed(5)})`;
     scenes.forEach((scene,i) => {
       const visible = Math.abs(positions[i][0]-p.x)<1.08 && Math.abs(positions[i][1]-p.y)<1.08;
@@ -254,27 +312,83 @@ window.mountDvpMobile = function mountDvpMobile() {
     activate(index);
   }
   function onScroll() {
-    if (ignoreScroll) return;
-    if(cinematic){targetY=clamp(window.scrollY-journey.offsetTop,0,total*frameH);requestFrame();}
+    // While a sheet is open, touch scrolling that leaks through the backdrop must not move the camera.
+    if (ignoreScroll || body.classList.contains('dialog-open')) return;
+    lastScrollAt=performance.now();
+    if(cinematic){
+      targetY=clamp(window.scrollY-journey.offsetTop,0,total*frameH);
+      requestFrame();
+      if(phone())scheduleSettle();
+    }
     else syncCalmPosition();
   }
 
-  function mobileScenesFit(height) {
-    return scenes.every(scene=>{
+  /* Phones have no wheel and no lerp: a flick can stop with two scenes half
+     visible. Once the native scroll has ended, glide to the nearest checkpoint. */
+  function cancelSettle(){
+    if(settleRaf)cancelAnimationFrame(settleRaf);settleRaf=0;
+    clearTimeout(scrollEndTimer);scrollEndTimer=0;
+  }
+  function scheduleSettle(){
+    clearTimeout(scrollEndTimer);
+    if(settleRaf)return;
+    scrollEndTimer=setTimeout(settleIfIdle,90);
+  }
+  function settleIfIdle(){
+    scrollEndTimer=0;
+    if(!cinematic||!phone()||touching||document.hidden)return;
+    if(performance.now()-lastScrollAt<80){scheduleSettle();return;}
+    const p=poseAt(targetY);
+    if(p.from===p.to||p.local<.03||p.local>.97)return;
+    settleTo(p.local<.5?p.from:p.to);
+  }
+  function settleTo(index){
+    const startY=window.scrollY, endY=journey.offsetTop+stops[index]*frameH;
+    const distance=endY-startY;
+    if(Math.abs(distance)<1)return;
+    const duration=clamp(Math.abs(distance)*.7,180,360);
+    const t0=performance.now();
+    const easeOut=k=>1-Math.pow(1-k,3); // Starts at full speed: continues the fling, never restarts it.
+    const step=now=>{
+      settleRaf=0;
+      if(touching){return;}
+      const k=easeOut(clamp((now-t0)/duration,0,1));
+      window.scrollTo(0,startY+distance*k);
+      if(k<1)settleRaf=requestAnimationFrame(step);
+    };
+    settleRaf=requestAnimationFrame(step);
+  }
+
+  function mobileFitRatio(height) {
+    // Smallest (available / required) height across the phone layouts; 1 means every scene fits.
+    let ratio=1;
+    scenes.forEach(scene=>{
       const layout=scene.querySelector('.mobile-layout') || scene.querySelector('.hero-unified');
-      if(!layout || getComputedStyle(layout).display!=='grid')return true;
+      if(!layout || getComputedStyle(layout).display!=='grid')return;
       const style=getComputedStyle(layout);
       const rows=style.gridTemplateRows.split(' ').map(Number.parseFloat);
       const required=rows.reduce((sum,row)=>sum+row,0)+
         (parseFloat(style.rowGap)||0)*(rows.length-1)+
         (parseFloat(style.paddingTop)||0)+(parseFloat(style.paddingBottom)||0);
-      return required<=height+1;
+      if(required>height+1)ratio=Math.min(ratio,height/required);
     });
+    return ratio;
+  }
+  const MIN_LAYOUT_SCALE=.8;
+  function applyLayoutScale(height){
+    // Instead of abandoning the camera when a phone is short, shrink the scene
+    // content a little. Only absurdly short frames still fall back to reading mode.
+    body.style.setProperty('--layout-scale','1');
+    const ratio=mobileFitRatio(height);
+    if(ratio>=1)return true;
+    if(ratio<MIN_LAYOUT_SCALE)return false;
+    body.style.setProperty('--layout-scale',ratio.toFixed(3));
+    return true;
   }
 
   function refitLayout() {
     fitHeadlines();
-    if(cinematic && frameW<=760 && !mobileScenesFit(frameH)){
+    if(cinematic && phone() && !applyLayoutScale(frameH)){
       setMode(true);return;
     }
     cacheAnchors();
@@ -287,19 +401,66 @@ window.mountDvpMobile = function mountDvpMobile() {
     const previousIndex=Math.max(0,activeIndex);
     const previousProgress=cinematic && frameH>0 ? currentY/frameH : null;
     const [w,h,smallH]=measureViewport();
-    frameW=w;frameH=h;
-    cinematic=!userCalm && !reduceMotion.matches && w>=320 && smallH>=620;
-    // Test the smallest Safari viewport so its toolbar cannot toggle the mode.
-    if(cinematic && w<=760){
+    cancelSettle();
+    frameW=w;
+    // Phones use the small viewport (toolbars visible) as the fixed frame: the
+    // camera then never rebuilds when Safari or Chrome collapse their bars.
+    frameH=phone() ? smallH : h;
+    const minPhoneH=phone() ? 500 : 620;
+    cinematic=!userCalm && !reduceMotion.matches && w>=320 && smallH>=minPhoneH;
+    calmReason=userCalm?'reader':reduceMotion.matches?'reduced-motion':w<320?'narrow':smallH<minPhoneH?'short':'';
+    body.classList.toggle('frame-phone',phone());
+    body.classList.toggle('frame-compact',phone() && smallH<700);
+    body.classList.toggle('frame-tight',phone() && smallH<600);
+    if(cinematic && phone()){
       ignoreScroll=true;
       body.classList.add('cinematic');
-      frameH=smallH;buildTimeline();fitHeadlines();
-      cinematic=mobileScenesFit(smallH);
-      frameH=h;
+      buildTimeline();fitHeadlines();
+      cinematic=applyLayoutScale(frameH);
+      if(!cinematic){calmReason='overflow';console.warn('DVP: vista de lectura porque una escena no cabe en',frameW+'x'+frameH);}
     }
     body.classList.toggle('cinematic',cinematic);
     body.classList.toggle('calm',!cinematic);
-    const paused = userCalm || reduceMotion.matches;
+    syncMotionButton();
+    if(cinematic){
+      buildTimeline();
+      cacheAnchors();
+      if(phone())atlas.style.removeProperty('transform');
+      else scenes.forEach(scene=>scene.style.removeProperty('transform'));
+      body.classList.toggle('brand-travel-ready',!phone());
+      currentY=preserve ? (preserveProgress && previousProgress!==null ? clamp(previousProgress,0,total) : stops[previousIndex])*frameH : 0;
+      targetY=currentY;
+      ignoreScroll=true;
+      window.scrollTo(0,journey.offsetTop+currentY);
+      activeIndex=-1;
+      render();
+      releaseScrollLock();
+    }else{
+      body.classList.remove('brand-travel-ready');
+      body.style.setProperty('--secondary-logo-opacity','0');
+      if(raf)cancelAnimationFrame(raf);raf=0;
+      atlas.style.removeProperty('transform');
+      journey.style.removeProperty('--journey-height');
+      scenes.forEach(scene=>{scene.inert=false;scene.classList.add('is-near');scene.style.removeProperty('--parallax');scene.style.removeProperty('transform');});
+      activeIndex=-1;activate(previousIndex);
+      if(preserve)requestAnimationFrame(()=>window.scrollTo(0,
+        preserveProgress && !wasCinematic ? previousScrollY : scenes[previousIndex].offsetTop+journey.offsetTop));
+      releaseScrollLock();
+    }
+    fitHeadlines();
+    cacheAnchors();
+    syncDvd();
+    scenes.forEach(scene=>{const h=scene.querySelector('#hero-title') || scene.querySelector((frameW<=760?'.mobile-layout':'.desktop-layout')+' h1, '+(frameW<=760?'.mobile-layout':'.desktop-layout')+' h2');if(h)scene.setAttribute('aria-labelledby',h.id);});
+    if(cinematic)render();
+  }
+
+  function releaseScrollLock() {
+    // rAF does not run in a background tab; the timer guarantees the release.
+    requestAnimationFrame(()=>{ignoreScroll=false;});
+    setTimeout(()=>{ignoreScroll=false;},120);
+  }
+  function syncMotionButton() {
+    const paused = userPaused || reduceMotion.matches;
     body.classList.toggle('motion-paused', paused);
     motionButton.setAttribute('aria-pressed',String(paused));
     motionButton.title=paused?'Activar las animaciones':'Pausar las animaciones';
@@ -310,52 +471,31 @@ window.mountDvpMobile = function mountDvpMobile() {
       motionLabel.textContent='Reducido';
       motionButton.title='Tu dispositivo solicita reducir el movimiento';
     }
-    if(cinematic){
-      buildTimeline();
-      cacheAnchors();
-      body.classList.add('brand-travel-ready');
-      currentY=preserve ? (preserveProgress && previousProgress!==null ? clamp(previousProgress,0,total) : stops[previousIndex])*h : 0;
-      targetY=currentY;
-      ignoreScroll=true;
-      window.scrollTo(0,journey.offsetTop+currentY);
-      activeIndex=-1;
-      render();
-      requestAnimationFrame(()=>{ignoreScroll=false;});
-    }else{
-      body.classList.remove('brand-travel-ready');
-      body.style.setProperty('--secondary-logo-opacity','0');
-      if(raf)cancelAnimationFrame(raf);raf=0;
-      atlas.style.removeProperty('transform');
-      journey.style.removeProperty('--journey-height');
-      scenes.forEach(scene=>{scene.inert=false;scene.classList.add('is-near');scene.style.removeProperty('--parallax');});
-      activeIndex=-1;activate(previousIndex);
-      if(preserve)requestAnimationFrame(()=>window.scrollTo(0,
-        preserveProgress && !wasCinematic ? previousScrollY : scenes[previousIndex].offsetTop+journey.offsetTop));
-      requestAnimationFrame(()=>{ignoreScroll=false;});
-    }
-    fitHeadlines();
-    cacheAnchors();
-    syncDvd();
-    scenes.forEach(scene=>{const h=scene.querySelector('#hero-title') || scene.querySelector((frameW<=760?'.mobile-layout':'.desktop-layout')+' h1, '+(frameW<=760?'.mobile-layout':'.desktop-layout')+' h2');if(h)scene.setAttribute('aria-labelledby',h.id);});
-    if(cinematic)render();
   }
 
+  function markDialogOpen() {
+    body.classList.add('dialog-open');cancelSettle();
+  }
   function closeDialogs() {
     if(indexDialog.open)indexDialog.close();
     if(infoDialog.open)infoDialog.close();
     document.querySelectorAll('.service-dialog[open]').forEach(d=>d.close());
   }
-  function goTo(id,{focus=false,hash=true}={}) {
+  function goTo(id,{focus=false,hash=true,smooth=false}={}) {
     const clean=String(id).replace(/^#/,'');
     const index=scenes.findIndex(s=>s.id===clean);
     if(index<0)return;
     closeDialogs();
-    if(cinematic){
+    cancelSettle();
+    if(cinematic && smooth && phone()){
+      // Phones have no camera easing, so a tap on a link glides instead of cutting.
+      settleTo(index);
+    }else if(cinematic){
       currentY=targetY=stops[index]*frameH;
       ignoreScroll=true;
       render();
       window.scrollTo(0,journey.offsetTop+targetY);
-      requestAnimationFrame(()=>{ignoreScroll=false;});
+      releaseScrollLock();
     }else{
       scenes[index].scrollIntoView({block:'start',behavior:'auto'});
       activate(index);
@@ -367,20 +507,33 @@ window.mountDvpMobile = function mountDvpMobile() {
   function onResize() {
     clearTimeout(resizeTimer);
     resizeTimer=setTimeout(()=>{
-      const [w,h]=measureViewport();
-      // Safari's toolbar changes the visible height. Keep the same point in
-      // the journey when rebuilding, including the final contact frame.
-      if(Math.abs(w-frameW)>2 || Math.abs(h-frameH)>4)setMode(true,Math.abs(w-frameW)<=2);
+      const [w,h,smallH]=measureViewport();
+      const sameWidth=Math.abs(w-frameW)<=2;
+      if(cinematic && phone() && sameWidth){
+        // A phone toolbar collapsing or the keyboard opening only changes the
+        // large viewport. The frame is the small viewport, so nothing rebuilds.
+        if(Math.abs(smallH-frameH)>4)setMode(true,true);
+        else fitHeadlines();
+        return;
+      }
+      // Desktop windows and orientation changes keep the same point in the journey.
+      if(!sameWidth || Math.abs(h-frameH)>4)setMode(true,sameWidth);
       else fitHeadlines();
     },160);
   }
 
   function init() {
     body.classList.add('js-ready');dvdX=window.innerWidth*.75;dvdY=window.innerHeight*.73;
+    // The journey position is derived from the hash, not from the browser's restored scroll.
+    if('scrollRestoration' in history){try{history.scrollRestoration='manual';}catch(_){}}
     // A direct ?view=calm preview works without changing the stored preference.
     if(new URLSearchParams(location.search).get('view')==='calm')userCalm=true;
     setMode(false);
     listen(window,'scroll',onScroll,{passive:true});
+    listen(window,'touchstart',()=>{touching=true;cancelSettle();},{passive:true});
+    listen(window,'touchend',()=>{touching=false;if(cinematic&&phone())scheduleSettle();},{passive:true});
+    listen(window,'touchcancel',()=>{touching=false;},{passive:true});
+    if('onscrollend' in window)listen(window,'scrollend',()=>{if(cinematic&&phone())settleIfIdle();},{passive:true});
     listen(window,'resize',onResize,{passive:true});
     if(window.visualViewport)listen(window.visualViewport,'resize',onResize,{passive:true});
     if(window.ResizeObserver){
@@ -393,24 +546,38 @@ window.mountDvpMobile = function mountDvpMobile() {
     listen(document,'visibilitychange',visibility);
     document.querySelectorAll('[data-scene-link]').forEach(link=>link.addEventListener('click',event=>{
       if(event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
-      event.preventDefault();goTo(link.getAttribute('href'),{focus:true});
+      event.preventDefault();goTo(link.getAttribute('href'),{focus:true,smooth:true});
     }));
     document.getElementById('read-story').addEventListener('click',event=>{
-      event.preventDefault();userCalm=true;safeStore('calm');setMode(true);
+      event.preventDefault();userCalm=true;safeStore('reader');setMode(true);
       requestAnimationFrame(()=>scenes[Math.max(0,activeIndex)].focus({preventScroll:true}));
     });
+    // "Pausar" only stops the decorative animations. The camera is the site.
     motionButton.addEventListener('click',()=>{
-      userCalm=!userCalm;safeStore(userCalm?'calm':'auto');setMode(true);
+      userPaused=!userPaused;safeStore(userPaused?'paused':'auto');
+      syncMotionButton();syncDvd();
     });
     indexButton.addEventListener('click',()=>{
       if(typeof indexDialog.showModal==='function'){
-        indexDialog.showModal();indexButton.setAttribute('aria-expanded','true');
+        indexDialog.showModal();markDialogOpen();indexButton.setAttribute('aria-expanded','true');
       }
     });
     document.querySelectorAll('#open-info, [data-open-info]').forEach(button=>button.addEventListener('click',()=>{
-      if(typeof infoDialog.showModal==='function')infoDialog.showModal();
+      if(typeof infoDialog.showModal==='function'){infoDialog.showModal();markDialogOpen();}
     }));
-    document.getElementById('next-scene').addEventListener('click',()=>goTo(scenes[(Math.max(0,activeIndex)+1)%scenes.length].id));
+    // Touch scrolling is not stopped by body{overflow:hidden} on iOS: a drag on the
+    // backdrop scrolls the page behind the sheet. Block it and re-sync the camera on close.
+    document.querySelectorAll('dialog').forEach(dialog=>{
+      listen(dialog,'touchmove',event=>{if(event.target===dialog)event.preventDefault();},{passive:false});
+      listen(dialog,'close',()=>{
+        if(document.querySelector('dialog[open]'))return;
+        body.classList.remove('dialog-open');
+        if(cinematic && Math.abs(window.scrollY-(journey.offsetTop+currentY))>1){
+          ignoreScroll=true;window.scrollTo(0,journey.offsetTop+currentY);releaseScrollLock();
+        }
+      });
+    });
+    document.getElementById('next-scene').addEventListener('click',()=>goTo(scenes[(Math.max(0,activeIndex)+1)%scenes.length].id,{smooth:true}));
     document.querySelectorAll('[data-close]').forEach(button=>button.addEventListener('click',()=>button.closest('dialog').close()));
     indexDialog.addEventListener('close',()=>indexButton.setAttribute('aria-expanded','false'));
     [indexDialog,infoDialog].forEach(dialog=>dialog.addEventListener('click',event=>{
@@ -427,7 +594,7 @@ window.mountDvpMobile = function mountDvpMobile() {
         if(!dialog || typeof dialog.showModal!=='function')return;
         event.preventDefault();
         closeDialogs();
-        dialog.showModal();dialog.scrollTop=0;
+        dialog.showModal();dialog.scrollTop=0;markDialogOpen();
         body.classList.add('service-reading');syncDvd();
         button.setAttribute('aria-expanded','true');
       });
@@ -465,19 +632,20 @@ window.mountDvpMobile = function mountDvpMobile() {
     window.dvpExperience=Object.freeze({
       goTo:id=>goTo(id,{hash:false}),
       refresh:()=>setMode(true),
-      status:()=>({mode:cinematic?'cinematic':'calm',motion:!userCalm && !reduceMotion.matches,scene:scenes[Math.max(activeIndex,0)].id,frame:[frameW,frameH],checkpoints:stops.map((t,i)=>({id:scenes[i].id,y:t*frameH})),scrollLength:total*frameH,brand:lastBrandPose,dvd:{x:dvdX,y:dvdY,reflections:dvdHits}})
+      status:()=>({mode:cinematic?'cinematic':'calm',calmReason,motion:!userPaused && !reduceMotion.matches,phone:phone(),layoutScale:body.style.getPropertyValue('--layout-scale')||'1',scene:scenes[Math.max(activeIndex,0)].id,frame:[frameW,frameH],checkpoints:stops.map((t,i)=>({id:scenes[i].id,y:t*frameH})),scrollLength:total*frameH,brand:lastBrandPose,dvd:{x:dvdX,y:dvdY,reflections:dvdHits}})
     });
   }
   try{init();}catch(error){
     // A failed enhancement must never result in a blank website.
     body.classList.remove('cinematic','js-ready','brand-travel-ready');body.classList.add('calm');
-    atlas.style.removeProperty('transform');journey.style.removeProperty('--journey-height');
+    if(atlas)atlas.style.removeProperty('transform');if(journey)journey.style.removeProperty('--journey-height');
     scenes.forEach(scene=>{scene.inert=false;scene.classList.add('is-near');});
     console.error('DVP: la vista con movimiento no pudo iniciarse; se mantiene la vista de lectura.',error);
   }
   return () => {
     listeners.forEach(remove=>remove());
     if(raf) cancelAnimationFrame(raf);
+    cancelSettle();
     clearTimeout(resizeTimer);
     if(dvdRaf)cancelAnimationFrame(dvdRaf);
     if(mediaRaf)cancelAnimationFrame(mediaRaf);
@@ -487,20 +655,7 @@ window.mountDvpMobile = function mountDvpMobile() {
   };
 };
 
-/* V10: the page is fully rendered by the build. React manages only progressive
-   motion enhancement; it never clears or duplicates the readable HTML tree. */
-(()=>{
- 'use strict';
- function DvpMotion(){
-   React.useLayoutEffect(()=>{
-     const clean=window.mountDvpMobile();
-     return ()=>{if(typeof clean==='function')clean();};
-   },[]);
-   return null;
- }
- const mount=document.getElementById('dvp-enhancements');
- if(mount && window.React && window.ReactDOM){
-   ReactDOM.createRoot(mount).render(React.createElement(DvpMotion));
- }
-})();
+/* The page is fully rendered HTML. This script is deferred, so the document is
+   parsed by now and the motion layer can mount directly (no framework needed). */
+window.dvpUnmount = window.mountDvpMobile();
 

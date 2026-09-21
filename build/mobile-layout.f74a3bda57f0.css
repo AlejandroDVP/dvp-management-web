@@ -1,0 +1,191 @@
+/* Match the camera and the scroll endpoint to the visible browser height. */
+body.cinematic .viewport { height:var(--frame-h); }
+/* Hash/focus navigation must not scroll inside the transformed camera. */
+body.cinematic .viewport, body.cinematic .scene { overflow:clip; }
+.journey { overflow-anchor:none; }
+/* Mobile scenes share one budget for the header, content and safe-area controls. */
+@media (max-width:760px), (pointer:coarse) and (max-width:1024px) and (max-height:619px) {
+  :root {
+    --header-h:calc(80px + env(safe-area-inset-top, 0px));
+    --mobile-content-bottom:calc(76px + env(safe-area-inset-bottom, 0px));
+  }
+  .mobile-layout,
+  .has-service-details .mobile-layout,
+  .contact .mobile-layout {
+    padding-top:calc(90px + env(safe-area-inset-top, 0px));
+    padding-bottom:var(--mobile-content-bottom);
+    gap:12px;
+  }
+  .hero-unified {
+    padding-top:calc(94px + env(safe-area-inset-top, 0px));
+    padding-bottom:var(--mobile-content-bottom);
+  }
+  .journey-hud {
+    height:calc(64px + env(safe-area-inset-bottom, 0px));
+    min-height:64px;
+    padding-top:8px!important;
+    padding-bottom:calc(12px + env(safe-area-inset-bottom, 0px))!important;
+  }
+  /* Desktop offsets must never move these logos out of the mobile header. */
+  .scene .m-head .closing-brand-home {
+    position:relative;
+    inset:auto;
+    width:180px;
+    height:54px;
+    max-width:68%;
+    margin:0 0 14px;
+  }
+  .global .m-title,
+  .contact .m-title {
+    margin-top:0!important;
+    font-size:clamp(42px, min(15vw, 7.4svh), 68px)!important;
+    line-height:1!important;
+  }
+  .global .mobile-layout { grid-template-rows:auto minmax(150px, 1fr) auto; }
+  .global .m-body>p { font-size:15px; line-height:1.5; }
+  .m-market { font-size:9px; }
+  .contact .mobile-layout { grid-template-rows:auto minmax(60px, 1fr) auto; gap:10px; }
+  .contact .m-contact-art { min-height:60px; }
+  .contact .m-team-word {
+    position:relative;
+    top:auto;
+    display:block;
+    padding-top:5px;
+    font-size:clamp(24px, 7.4vw, 36px);
+  }
+  .contact .m-contact-orbit { right:0; top:0; height:100%; width:55%; }
+  .contact .m-contact-primary {
+    min-height:62px;
+    padding:12px 15px;
+    font-size:16px;
+    margin-bottom:4px;
+  }
+  .contact .m-contact-body>a:not(.m-contact-primary) {
+    min-height:44px;
+    padding:10px 0;
+    font-size:14px;
+  }
+  .contact .m-contact-legal { margin-top:4px; gap:10px; }
+  .contact .m-contact-legal>span { font-size:9px; }
+  .contact .m-contact-legal button { font-size:11px; min-height:44px; }
+  .contact .trust-links { margin-top:2px; gap:0 14px; }
+  .contact .trust-links a { display:flex; align-items:center; min-height:44px; }
+  /* Short screens and enlarged text retain a complete, naturally scrolling page. */
+  body:not(.cinematic) .contact .mobile-layout {
+    min-height:0;
+    grid-template-rows:auto minmax(90px, auto) auto;
+    gap:24px;
+  }
+  body:not(.cinematic) .contact { min-height:0; }
+}
+
+/* ===== Phone camera (2026-09): static vectors, frame locked to the small viewport ===== */
+@media (max-width:760px), (pointer:coarse) and (max-width:1024px) and (max-height:619px) {
+  /* The strip a collapsing browser toolbar reveals under the frame takes the scene colour. */
+  body.cinematic .journey { background:var(--frame-fill, #dedfcc); }
+  body.cinematic .viewport { height:var(--frame-h); background:var(--frame-fill, #dedfcc); }
+  /* Flying vectors are desktop-only. Each phone scene shows its own static logo and globe. */
+  body.cinematic .traveler,
+  body.cinematic .transition-line,
+  body.cinematic .brand-traveler,
+  .dvd-ambient { display:none!important; }
+  body.cinematic .m-static-globe { visibility:visible; animation:none!important; }
+  body.cinematic .branch-logo-slot img,
+  body.cinematic .site-header .brand img,
+  body.cinematic .hero-brand-home img { visibility:visible!important; }
+  /* The header wordmark belongs to the opening scene; every other scene carries its own lockup. */
+  body.cinematic:not([data-scene="inicio"]) .site-header .brand img { visibility:hidden!important; }
+  /* Decorative keyframes that animate filters or large transforms stay off on phones. */
+  .m-volley, .m-sculpture, .m-publicity-star, .m-plane-orbit, .m-tape span,
+  .traveler-body, .dvp-service-card { animation:none!important; }
+  .m-plane-orbit { transform:rotate(24deg); }
+  /* The grain overlay uses blend modes, which cost a compositing pass per scene on every camera move. */
+  body.frame-phone.cinematic .scene::after { display:none; }
+  /* Headlines beyond the safe squeeze shrink uniformly instead of distorting (set by app.js). */
+  .fit-line { transform:scale(var(--fit-shrink, 1)) scaleX(var(--fit, 1)); }
+  /* Short frames shrink the scene content instead of losing the camera (set by app.js). */
+  body.cinematic .mobile-layout,
+  body.cinematic .hero-unified { transform:scale(var(--layout-scale, 1)); transform-origin:50% 50%; }
+  /* Compact frames (small viewport under 700px), keyed on a class so toolbars never flip the layout. */
+  body.frame-compact .mobile-layout,
+  body.frame-compact .has-service-details .mobile-layout,
+  body.frame-compact .contact .mobile-layout {
+    padding-top:calc(82px + env(safe-area-inset-top, 0px));
+    padding-bottom:calc(70px + env(safe-area-inset-bottom, 0px));
+    gap:10px;
+  }
+  body.frame-compact .hero-unified {
+    padding-top:calc(86px + env(safe-area-inset-top, 0px));
+    padding-bottom:calc(70px + env(safe-area-inset-bottom, 0px));
+    gap:10px;
+  }
+  body.frame-compact .scene .m-title { font-size:16vw; margin-top:12px; }
+  body.frame-compact .scene .m-title-hero { font-size:17.5vw; }
+  body.frame-compact .hero-unified .hero-title { font-size:clamp(48px, min(17vw, 8.6svh), 88px)!important; }
+  body.frame-compact .m-art { min-height:120px; }
+  body.frame-compact .m-body>p { font-size:14px; line-height:1.4; }
+  body.frame-compact .hero-unified .hero-collage { min-height:140px; }
+  body.frame-compact .m-tags { margin-top:10px; gap:6px; }
+  body.frame-compact .m-tags span { font-size:10px; padding:5px 8px; }
+  body.frame-compact .m-contact-art { min-height:70px; }
+  body.frame-compact .journey-hud { height:calc(58px + env(safe-area-inset-bottom, 0px)); min-height:58px; }
+  /* Tight frames (small viewport under 600px: iPhone SE/8, small Androids). */
+  body.frame-tight .mobile-layout,
+  body.frame-tight .has-service-details .mobile-layout,
+  body.frame-tight .contact .mobile-layout {
+    padding-top:calc(72px + env(safe-area-inset-top, 0px));
+    padding-bottom:calc(64px + env(safe-area-inset-bottom, 0px));
+    gap:8px;
+  }
+  body.frame-tight .hero-unified {
+    padding-top:calc(76px + env(safe-area-inset-top, 0px));
+    padding-bottom:calc(64px + env(safe-area-inset-bottom, 0px));
+    gap:8px;
+    grid-template-rows:auto auto minmax(120px,1fr) auto;
+  }
+  body.frame-tight .scene .m-title { font-size:14.5vw; margin-top:8px; }
+  body.frame-tight .scene .m-title-hero { font-size:16vw; }
+  body.frame-tight .hero-unified .hero-title { font-size:clamp(44px, min(15.5vw, 8.2svh), 80px)!important; }
+  body.frame-tight .hero-unified .hero-copy .hero-definition { font-size:14px!important; }
+  body.frame-tight .hero-unified .hero-copy p+p { font-size:13px; margin-top:6px; }
+  body.frame-tight .scene .mobile-layout { grid-template-rows:auto minmax(110px,1fr) auto; }
+  body.frame-tight .m-art { min-height:110px; }
+  body.frame-tight .m-body>p { font-size:13.5px; line-height:1.38; }
+  body.frame-tight .m-body .m-note { font-size:9.5px; margin-top:8px; }
+  body.frame-tight .m-contact-art { min-height:56px; }
+  body.frame-tight .contact .mobile-layout { grid-template-rows:auto minmax(50px,1fr) auto; gap:8px; }
+  body.frame-tight .contact .m-title { font-size:clamp(38px, min(13.5vw, 6.8svh), 60px)!important; }
+  body.frame-tight .contact .m-contact-primary { min-height:54px; padding:10px 14px; font-size:15px; }
+  body.frame-tight .contact .m-contact-body>a:not(.m-contact-primary) { min-height:40px; padding:8px 0; font-size:13px; }
+  body.frame-tight .journey-hud { height:calc(54px + env(safe-area-inset-bottom, 0px)); min-height:54px; }
+  body.frame-tight .site-header { height:calc(64px + env(safe-area-inset-top, 0px)); }
+}
+
+/* ===== Phone GPU budget (2026-09-21) ===== */
+@media (max-width:760px), (pointer:coarse) and (max-width:1024px) and (max-height:619px) {
+  /* The atlas is not a layer on phones; each visible scene is (see render() in app.js). */
+  body.frame-phone.cinematic .atlas { transform:none!important; will-change:auto; }
+  body.frame-phone.cinematic .scene.is-near { will-change:transform; }
+  body.frame-phone.cinematic .scene:not(.is-near) { will-change:auto; transform:none!important; }
+  /* No blur over moving content: a backdrop-filter re-renders every frame on phones. */
+  body.frame-phone .journey-hud,
+  body.frame-phone .site-header,
+  body.frame-phone .dvp-service-card::before,
+  body.frame-phone #management .dvp-service-card::before {
+    backdrop-filter:none!important; -webkit-backdrop-filter:none!important;
+  }
+  body.frame-phone .journey-hud { background:var(--ui-bg); }
+  body.frame-phone dialog::backdrop { backdrop-filter:none; -webkit-backdrop-filter:none; }
+  /* The vector animations are desktop-only (owner's call): stroke and transform keyframes
+     inside a scene repaint on the CPU every frame while the camera is already moving. */
+  body.frame-phone .scene *,
+  body.frame-phone .scene *::before,
+  body.frame-phone .scene *::after { animation:none!important; transition:none!important; }
+  body.frame-phone .m-play-path { stroke-dashoffset:0; }
+  body.frame-phone .m-scan { display:none; }
+  body.frame-phone .heart-trace { stroke-dasharray:none; opacity:.9; }
+  /* Blend modes inside a scene force an isolated group per repaint; a plain tint is enough here. */
+  body.frame-phone .m-pitch-photo { mix-blend-mode:normal; opacity:.14; }
+  /* Photo layers no longer float, so their filters are one-off rasters; keep them cheap. */
+  body.frame-phone .m-volley, body.frame-phone .m-world-art .m-plane { filter:none; }
+}
