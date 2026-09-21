@@ -217,6 +217,8 @@ window.mountDvpMobile = function mountDvpMobile() {
     [index,Math.min(index+1,scenes.length-1)].forEach(i=>{
       scenes[i].querySelectorAll('img[loading="lazy"]').forEach(img=>{img.loading='eager';if(img.decode)img.decode().catch(()=>{});});
     });
+    // Phones keep only the current and next scene's images decoded; the rest may be evicted.
+    if(phone())scenes.forEach((scene,i)=>{if(Math.abs(i-index)>1)scene.querySelectorAll('img[loading="eager"]:not([fetchpriority])').forEach(img=>{img.loading='lazy';});});
     const scene = scenes[index];
     body.classList.toggle('ui-dark',scene.dataset.color === 'dark');
     body.dataset.scene=scene.id; // Phones hide the header wordmark once a scene shows its own.
@@ -261,14 +263,26 @@ window.mountDvpMobile = function mountDvpMobile() {
     const p=poseAt(currentY);
     const cx=(p.x+.5)*frameW,cy=(p.y+.5)*frameH;
     const tx=frameW*.5-cx*p.scale,ty=frameH*.5-cy*p.scale;
+    if(phone()){
+      // Phones: the atlas is never transformed (a 4x3-frame layer is too large for a
+      // phone GPU and Safari rasterises its tiles mid-scroll). Only the one or two
+      // scenes that intersect the frame move, each as its own frame-sized layer.
+      const move=`translate3d(${tx.toFixed(2)}px,${ty.toFixed(2)}px,0)`;
+      scenes.forEach((scene,i) => {
+        const visible = Math.abs(positions[i][0]-p.x)<1 && Math.abs(positions[i][1]-p.y)<1;
+        scene.classList.toggle('is-near',visible);
+        if(visible)scene.style.transform=move;
+      });
+      activate(p.index);
+      return; // Static logos and globes on phones: nothing else moves.
+    }
     atlas.style.transform=`translate3d(${tx.toFixed(2)}px,${ty.toFixed(2)}px,0) scale(${p.scale.toFixed(5)})`;
     scenes.forEach((scene,i) => {
       const visible = Math.abs(positions[i][0]-p.x)<1.08 && Math.abs(positions[i][1]-p.y)<1.08;
       scene.classList.toggle('is-near',visible);
-      if (visible && !phone()) scene.style.setProperty('--parallax',String(clamp((currentY/frameH-stops[i])*.8,-1,1)));
+      if (visible) scene.style.setProperty('--parallax',String(clamp((currentY/frameH-stops[i])*.8,-1,1)));
     });
     activate(p.index);
-    if(phone())return; // Static logos and globes on phones: nothing else moves.
     renderBrand(p);
     const a=globeAnchors[0];
     if(a){
@@ -411,6 +425,8 @@ window.mountDvpMobile = function mountDvpMobile() {
     if(cinematic){
       buildTimeline();
       cacheAnchors();
+      if(phone())atlas.style.removeProperty('transform');
+      else scenes.forEach(scene=>scene.style.removeProperty('transform'));
       body.classList.toggle('brand-travel-ready',!phone());
       currentY=preserve ? (preserveProgress && previousProgress!==null ? clamp(previousProgress,0,total) : stops[previousIndex])*frameH : 0;
       targetY=currentY;
@@ -425,7 +441,7 @@ window.mountDvpMobile = function mountDvpMobile() {
       if(raf)cancelAnimationFrame(raf);raf=0;
       atlas.style.removeProperty('transform');
       journey.style.removeProperty('--journey-height');
-      scenes.forEach(scene=>{scene.inert=false;scene.classList.add('is-near');scene.style.removeProperty('--parallax');});
+      scenes.forEach(scene=>{scene.inert=false;scene.classList.add('is-near');scene.style.removeProperty('--parallax');scene.style.removeProperty('transform');});
       activeIndex=-1;activate(previousIndex);
       if(preserve)requestAnimationFrame(()=>window.scrollTo(0,
         preserveProgress && !wasCinematic ? previousScrollY : scenes[previousIndex].offsetTop+journey.offsetTop));

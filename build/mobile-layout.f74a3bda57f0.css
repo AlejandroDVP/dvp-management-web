@@ -160,3 +160,32 @@ body.cinematic .viewport, body.cinematic .scene { overflow:clip; }
   body.frame-tight .journey-hud { height:calc(54px + env(safe-area-inset-bottom, 0px)); min-height:54px; }
   body.frame-tight .site-header { height:calc(64px + env(safe-area-inset-top, 0px)); }
 }
+
+/* ===== Phone GPU budget (2026-09-21) ===== */
+@media (max-width:760px), (pointer:coarse) and (max-width:1024px) and (max-height:619px) {
+  /* The atlas is not a layer on phones; each visible scene is (see render() in app.js). */
+  body.frame-phone.cinematic .atlas { transform:none!important; will-change:auto; }
+  body.frame-phone.cinematic .scene.is-near { will-change:transform; }
+  body.frame-phone.cinematic .scene:not(.is-near) { will-change:auto; transform:none!important; }
+  /* No blur over moving content: a backdrop-filter re-renders every frame on phones. */
+  body.frame-phone .journey-hud,
+  body.frame-phone .site-header,
+  body.frame-phone .dvp-service-card::before,
+  body.frame-phone #management .dvp-service-card::before {
+    backdrop-filter:none!important; -webkit-backdrop-filter:none!important;
+  }
+  body.frame-phone .journey-hud { background:var(--ui-bg); }
+  body.frame-phone dialog::backdrop { backdrop-filter:none; -webkit-backdrop-filter:none; }
+  /* The vector animations are desktop-only (owner's call): stroke and transform keyframes
+     inside a scene repaint on the CPU every frame while the camera is already moving. */
+  body.frame-phone .scene *,
+  body.frame-phone .scene *::before,
+  body.frame-phone .scene *::after { animation:none!important; transition:none!important; }
+  body.frame-phone .m-play-path { stroke-dashoffset:0; }
+  body.frame-phone .m-scan { display:none; }
+  body.frame-phone .heart-trace { stroke-dasharray:none; opacity:.9; }
+  /* Blend modes inside a scene force an isolated group per repaint; a plain tint is enough here. */
+  body.frame-phone .m-pitch-photo { mix-blend-mode:normal; opacity:.14; }
+  /* Photo layers no longer float, so their filters are one-off rasters; keep them cheap. */
+  body.frame-phone .m-volley, body.frame-phone .m-world-art .m-plane { filter:none; }
+}
