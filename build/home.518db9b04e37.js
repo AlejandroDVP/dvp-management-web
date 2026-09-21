@@ -29,13 +29,15 @@ window.mountDvpMobile = function mountDvpMobile() {
   // travel: frames spent flying to the next scene (phones override both, see buildTimeline).
   const timelineById={
     inicio:{pos:[0,0],hold:.18,travel:.95},
-    management:{pos:[0,1],hold:.52,travel:.92},
-    wealth:{pos:[1,1],hold:.60,travel:.96},
-    publicity:{pos:[1,2],hold:.55,travel:.94},
-    analytics:{pos:[2,2],hold:.48,travel:.97},
-    wellness:{pos:[2,1],hold:.67,travel:.96},
-    mundo:{pos:[3,1],hold:.50,travel:1.02},
-    contacto:{pos:[3,2],hold:0,travel:0}
+    dvp:{pos:[0,1],hold:.55,travel:.92},
+    representacion:{pos:[1,1],hold:.52,travel:.92},
+    performance:{pos:[1,2],hold:.60,travel:.96},
+    brand:{pos:[2,2],hold:.55,travel:.94},
+    future:{pos:[2,1],hold:.55,travel:.96},
+    prueba:{pos:[3,1],hold:.55,travel:.96},
+    mundo:{pos:[3,2],hold:.50,travel:.98},
+    equipo:{pos:[4,2],hold:.55,travel:1.02},
+    contacto:{pos:[4,1],hold:0,travel:0}
   };
   scenes.forEach(s=>{if(!timelineById[s.id])console.error('DVP: la escena "'+s.id+'" no tiene entrada en timelineById; la cámara no la conoce.');});
   const timeline=scenes.map(s=>timelineById[s.id] || {pos:[0,0],hold:.5,travel:.95});
@@ -43,7 +45,7 @@ window.mountDvpMobile = function mountDvpMobile() {
   const holds = timeline.map(t=>t.hold);
   const travels = timeline.map(t=>t.travel);
   // Poses are keyed by scene, so changing editorial order never changes a destination.
-  const desktopGlobeById={inicio:[.923,.34,98,0],management:[.88,.28,93,1],wealth:[.28,.55,145,0],publicity:[.87,.72,108,0],analytics:[.37,.66,83,1],wellness:[.236,.50,113,1],mundo:[.417,.73,115,1],contacto:[.87,.32,120,0]};
+  const desktopGlobeById={inicio:[.923,.34,98,0],dvp:[.88,.28,93,1],representacion:[.88,.28,93,1],performance:[.37,.66,83,1],brand:[.87,.72,108,0],future:[.28,.55,145,0],prueba:[.87,.72,100,0],mundo:[.417,.73,115,1],equipo:[.236,.50,113,1],contacto:[.87,.32,120,0]};
   const globeDesktop=scenes.map(s=>desktopGlobeById[s.id]);
   const globeTablet=globeDesktop.map(p=>[p[0],p[1],p[2]*.73,p[3]]);
   const primaryLogoHome = document.querySelector('[data-primary-logo-home]');
@@ -117,6 +119,7 @@ window.mountDvpMobile = function mountDvpMobile() {
     });
     globeAnchors=frameW<=760 ? scenes.map(scene=>{
       const slot=scene.querySelector('.m-globe-slot');
+      if(!slot)return [.5,.5,60,Number(scene.classList.contains('dark'))]; // Scenes without a globe slot.
       const b=localBox(slot,scene);
       return [(b.x+b.w/2)/frameW,(b.y+b.h/2)/frameH,b.w,Number(slot.dataset.light)];
     }) : frameW<=900 ? globeTablet : globeDesktop;
@@ -683,11 +686,10 @@ window.dvpUnmount = window.mountDvpMobile();
 (()=>{
   'use strict';
   const configs=[
-    {key:'management',desktop:'.management-photo',mobile:'.m-photo-block',title:'DVP Football Management',headline:'Tu carrera, acompañada.',summary:'Representación y estrategia deportiva para acompañar las decisiones que marcan cada etapa de tu carrera.'},
-    {key:'wealth',desktop:'.wealth-photo',mobile:'.organic-wealth',title:'DVP Wealth Consulting',headline:'Construye también fuera del campo.',summary:'Una visión ordenada para proteger y proyectar el patrimonio que construyes durante tu carrera.'},
-    {key:'publicity',desktop:'.publicity-one',mobile:'.m-pub-one',title:'DVP Publicity',headline:'Tu imagen también juega.',summary:'Posicionamiento, imagen y oportunidades comerciales alineadas con tu identidad y tu carrera.'},
-    {key:'analytics',desktop:'.analysis-visual',mobile:'.m-analytics-art',title:'DVP Analytics',headline:'Entender para evolucionar.',summary:'Una lectura independiente de tu juego para aportar contexto a tu rendimiento y a tu evolución.'},
-    {key:'wellness',desktop:'.wellness-photo',mobile:'.organic-wellness',title:'DVP Wellness',headline:'Cuerpo. Cabeza. Fútbol.',summary:'Un enfoque integral de bienestar y rendimiento alrededor del jugador y de sus necesidades.'}
+    {key:'management',scene:'representacion',desktop:'.management-photo',mobile:'.m-photo-block',title:'Representación · DVP Football Management',headline:'Primero, el fútbol.',summary:'Contratos, renovaciones, transferencias y plan de carrera: el núcleo alrededor del que se coordina todo lo demás.'},
+    {key:'wealth',scene:'future',desktop:'.wealth-photo',mobile:'.organic-wealth',title:'Future · DVP Wealth Consulting',headline:'Construye también fuera del campo.',summary:'Una visión ordenada para proteger y proyectar el patrimonio que construyes durante tu carrera.'},
+    {key:'publicity',scene:'brand',desktop:'.publicity-one',mobile:'.m-pub-one',title:'Brand · DVP Publicity',headline:'Tu imagen también juega.',summary:'Posicionamiento, imagen y oportunidades comerciales alineadas con tu identidad y tu carrera.'},
+    {key:'performance',scene:'performance',desktop:'.analysis-storyboard',mobile:'.m-storyboard',title:'Performance · DVP Analytics + DVP Wellness',headline:'Tu equipo fuera del campo.',summary:'Análisis de tus partidos y especialistas coordinados alrededor de una única prioridad: que estés preparado para rendir.'}
   ];
 
   const openService=(key,scene)=>{
@@ -695,7 +697,7 @@ window.dvpUnmount = window.mountDvpMobile();
     if(trigger){trigger.click();return;}
     const dialog=document.getElementById(`service-${key}`);
     if(dialog && typeof dialog.showModal==='function' && !dialog.open){dialog.showModal();return;}
-    const fallback={management:'representacion-futbolistas/',wealth:'patrimonio-futbolistas/',publicity:'marca-personal-futbolistas/',analytics:'videoanalisis-futbolistas/',wellness:'bienestar-futbolistas/'}[key];
+    const fallback={management:'representacion-futbolistas/',wealth:'patrimonio-futbolistas/',publicity:'marca-personal-futbolistas/',performance:'videoanalisis-futbolistas/'}[key];
     if(fallback) location.href=fallback;
   };
 
@@ -723,7 +725,7 @@ window.dvpUnmount = window.mountDvpMobile();
   };
 
   configs.forEach(cfg=>{
-    const scene=document.getElementById(cfg.key);
+    const scene=document.getElementById(cfg.scene||cfg.key);
     if(!scene) return;
     prepareCard(scene.querySelector(cfg.desktop),cfg,scene,false);
     prepareCard(scene.querySelector(cfg.mobile),cfg,scene,true);

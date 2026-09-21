@@ -1,4 +1,3 @@
+# Propuesta narrativa v2: no indexar. Revertir a "Allow: /" + sitemap si se publica en dvp.football.
 User-agent: *
-Allow: /
-
-Sitemap: https://dvp.football/sitemap.xml
+Disallow: /
