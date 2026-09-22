@@ -485,6 +485,7 @@ window.mountDvpMobile = function mountDvpMobile() {
   function syncMotionButton() {
     const paused = userPaused || reduceMotion.matches;
     body.classList.toggle('motion-paused', paused);
+    if(!motionButton||!motionLabel)return; // The HUD no longer ships a pause button.
     motionButton.setAttribute('aria-pressed',String(paused));
     motionButton.title=paused?'Activar las animaciones':'Pausar las animaciones';
     motionButton.setAttribute('aria-label',motionButton.title);
@@ -576,7 +577,7 @@ window.mountDvpMobile = function mountDvpMobile() {
       requestAnimationFrame(()=>scenes[Math.max(0,activeIndex)].focus({preventScroll:true}));
     });
     // "Pausar" only stops the decorative animations. The camera is the site.
-    motionButton.addEventListener('click',()=>{
+    if(motionButton)motionButton.addEventListener('click',()=>{
       userPaused=!userPaused;safeStore(userPaused?'paused':'auto');
       syncMotionButton();syncDvd();
     });
