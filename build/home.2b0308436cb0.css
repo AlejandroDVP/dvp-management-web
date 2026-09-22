@@ -1223,3 +1223,17 @@ body.cinematic .viewport, body.cinematic .scene { overflow:clip; }
 }
 .analysis-storyboard{background:none!important;box-shadow:none!important;padding:0!important}
 .analysis-storyboard .sb-note{color:#0f2b26;opacity:.75}
+/* Contacto: fila de Instagram en lugar de los enlaces secundarios */
+.contact-social{display:flex;align-items:center;gap:14px;margin-top:22px;padding:12px 0;border-top:1px solid rgba(21,24,17,.22);border-bottom:1px solid rgba(21,24,17,.22);min-height:56px;text-decoration:none;color:inherit}
+.contact-social svg{width:26px;height:26px;stroke:currentColor;stroke-width:1.8;flex:none}
+.contact-social .social-text{display:grid;gap:2px;flex:1;min-width:0}
+.contact-social b{font-size:15px;font-weight:800;letter-spacing:-.01em}
+.contact-social small{font-size:11px;letter-spacing:.02em;opacity:.75}
+.contact-social i{font-style:normal;font-size:20px;line-height:1;flex:none}
+.contact-social:hover b{text-decoration:underline}
+@media(max-width:760px), (pointer:coarse) and (max-width:1024px) and (max-height:619px){
+  .contact .m-contact-body .contact-social{margin-top:6px;padding:9px 0;min-height:48px;gap:12px}
+  .contact .m-contact-body .contact-social svg{width:22px;height:22px}
+  .contact .m-contact-body .contact-social b{font-size:14px}
+  .contact .m-contact-body .contact-social small{font-size:10px}
+}
