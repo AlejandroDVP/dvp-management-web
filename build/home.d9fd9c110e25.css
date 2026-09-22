@@ -1342,3 +1342,24 @@ body.frame-phone.cinematic .journey{background:#dedfcc}
 html.snap-scenes{scroll-snap-type:y mandatory}
 html.snap-scenes .journey{position:relative}
 html.snap-scenes .snap-point{position:absolute;left:0;width:1px;height:1px;pointer-events:none;scroll-snap-align:start;scroll-snap-stop:always}
+
+/* ===== Así se nota, escritorio: tarjetas numeradas sobre una foto ===== */
+@media(min-width:761px){
+  .prueba-main{top:15%;width:38%}
+  .prueba-main h2{font-size:clamp(84px,10vw,176px)}
+  .prueba-main .body-copy{font-size:18px;max-width:430px}
+  .prueba-main .proof-note{font-size:13.5px;max-width:460px}
+  .prueba-photo{position:absolute;right:3%;top:8%;width:30%;height:72%;margin:0;overflow:hidden;transform:rotate(3deg);z-index:2;box-shadow:0 18px 50px rgba(20,30,10,.18)}
+  .prueba-photo img{width:100%;height:100%;object-fit:cover;object-position:50% 40%;filter:saturate(.9)}
+  .prueba-steps{right:12%;top:50%;width:46%;transform:translateY(-50%);z-index:4}
+  .prueba-steps .steps{padding-left:0;gap:10px;counter-reset:step}
+  .prueba-steps .steps::before{display:none}
+  .prueba-steps .steps li{counter-increment:step;grid-template-columns:52px 150px 1fr;gap:16px;align-items:center;padding:16px 20px;background:rgba(246,250,232,.86);border:1px solid rgba(21,24,17,.18);box-shadow:0 10px 26px rgba(20,30,10,.10)}
+  .prueba-steps .steps li::before{content:"0" counter(step);position:static;width:auto;height:auto;border:0;border-radius:0;background:none;font-family:var(--display);font-weight:900;font-size:38px;line-height:.9;letter-spacing:-.04em;color:var(--ink)}
+  .prueba-steps .steps b{font-size:11.5px;letter-spacing:.12em}
+  .prueba-steps .steps span{font-size:16.5px;line-height:1.4}
+}
+@media(min-width:761px) and (max-width:1100px){
+  .prueba-steps{width:52%;right:6%}
+  .prueba-photo{display:none}
+}
