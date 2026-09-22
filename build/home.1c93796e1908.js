@@ -179,6 +179,69 @@ window.mountDvpMobile = function mountDvpMobile() {
   // Phones rarely have the condensed display font (the stack falls back to Arial or
   // Roboto), so a headline can need heavy compression. Past this much horizontal
   // squeeze the glyphs distort; the remainder is applied as a uniform shrink instead.
+  /* ===== Capa de entrada de escena =====
+     Las palabras del titular y los bloques de cada escena entran escalonados cuando
+     activate() marca la escena como .is-active. Todo es transición CSS: no hay bucle
+     por fotograma y no se toca render(). Reglas que impone fitHeadlines():
+       · el espacio entre palabras se conserva como nodo de texto (word-spacing),
+       · solo se anima en vertical (un translateX inflaría scrollWidth y encogería el
+         titular de forma permanente),
+       · nunca display:none ni visibility:hidden (la medida daría 0),
+       · no se toca el transform de .fit-line, que es de scaleX(var(--fit)). */
+  function splitWords(){
+    document.querySelectorAll('.fit-line').forEach(line=>{
+      if(line.querySelector('.rw'))return;
+      const words=line.textContent.split(/\s+/).filter(Boolean);
+      if(words.length<2)return;
+      line.textContent='';
+      words.forEach((w,i)=>{
+        if(i)line.appendChild(document.createTextNode(' ')); // el espacio lleva word-spacing
+        const span=document.createElement('span');
+        span.className='rw'; span.style.setProperty('--i',String(i)); span.textContent=w;
+        line.appendChild(span);
+      });
+    });
+  }
+
+  /* Orden de entrada. Cada bloque de layout (escritorio, móvil, hero) numera desde
+     cero, para que la cascada empiece igual en ambos y no herede índices del otro. */
+  const REVEAL_ORDER=[
+    '.branch-name','.scene-eyebrow','.m-eyebrow',
+    '__words__',
+    '.body-copy','.m-body>p','.hero-copy>p','.contact-answer',
+    '.sys-list','.m-tags','.net-tags','.perf-areas','.steps>li','.team-cards>li',
+    '.proof-note','.team-note','.service-actions','.service-modality',
+    '.hero-actions','.hero-cta','.m-scrollcue','.contact-links','.m-contact-body',
+    '.m-art','.dvp-diagram','.analysis-storyboard','.prueba-photo','.prueba-steps',
+    '.team-photo','.wealth-photo','.wealth-photo-back','.publicity-photo',
+    '.management-photo','.wellness-photo','.global-map','.dvp-photo','.hero-collage'
+  ];
+  function markGroup(root){
+    let i=0;
+    const take=el=>{
+      if(!el||el.classList.contains('rv')||el.closest('.rw'))return;
+      if(el.parentElement&&el.parentElement.closest('.rv'))return;
+      el.classList.add('rv');el.style.setProperty('--i',String(i++));
+    };
+    REVEAL_ORDER.forEach(sel=>{
+      if(sel==='__words__'){
+        root.querySelectorAll('.fit-line').forEach(line=>{
+          const words=line.querySelectorAll('.rw');
+          if(words.length)words.forEach(w=>w.style.setProperty('--i',String(i++)));
+          else take(line);
+        });
+        return;
+      }
+      root.querySelectorAll(sel).forEach(take);
+    });
+  }
+  function markReveal(){
+    scenes.forEach(scene=>{
+      const groups=[...scene.querySelectorAll('.desktop-layout,.mobile-layout,.hero-unified')];
+      (groups.length?groups:[scene]).forEach(markGroup);
+    });
+  }
+
   const MAX_SQUEEZE=.88;
   function fitHeadlines() {
     // The measurement is independent of glyph width, browser zoom and the camera transform.
@@ -580,6 +643,7 @@ window.mountDvpMobile = function mountDvpMobile() {
 
   function init() {
     body.classList.add('js-ready');dvdX=window.innerWidth*.75;dvdY=window.innerHeight*.73;
+    splitWords(); markReveal();
     // The journey position is derived from the hash, not from the browser's restored scroll.
     if('scrollRestoration' in history){try{history.scrollRestoration='manual';}catch(_){}}
     // A direct ?view=calm preview works without changing the stored preference.

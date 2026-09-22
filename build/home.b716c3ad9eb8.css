@@ -1409,3 +1409,71 @@ html.snap-scenes .snap-point{position:absolute;left:0;width:1px;height:1px;point
 }
 /* Así se nota: pieza de portería en lugar de repetir la cancha */
 @media(min-width:761px){.prueba-photo{left:44%;bottom:6%;width:22%;aspect-ratio:auto;transform:rotate(-3deg)}}
+
+/* ===== Entrada y salida de escena (2026-09-22) =====
+   Disparado por .is-active, que activate() ya pone y quita una vez por entrada.
+   El estado oculto vive dentro de body.cinematic: con prefers-reduced-motion la
+   cámara se apaga y sin JavaScript no hay .js-ready, así que en ambos casos todo
+   se ve sin animación. */
+.rw{display:inline-block} /* transform no afecta al layout: la caja del h1 no cambia */
+body.cinematic .scene .rv,
+body.cinematic .scene .rw{opacity:0;transform:translateY(.42em)}
+/* Los elementos con opacidad de diseño declaran la suya en --rv-o; el resto llega a 1. */
+.dvp-photo{--rv-o:.55}
+.team-note{--rv-o:.7}
+body.cinematic .scene.is-active .rv,
+body.cinematic .scene.is-active .rw{
+  opacity:var(--rv-o,1);transform:none;
+  transition:opacity .52s ease, transform .52s cubic-bezier(.22,.75,.24,1);
+  transition-delay:calc(min(var(--i,0),9)*48ms);
+}
+/* Al viajar, la escena que dejas se atenúa de golpe en vez de deshacer la cascada. */
+body.cinematic .scene:not(.is-active) .rv,
+body.cinematic .scene:not(.is-active) .rw{transition:opacity .24s ease;transition-delay:0s}
+
+/* ===== Parallax por capas (solo escritorio: render() sale temprano en teléfonos) ===== */
+@media(min-width:761px){
+  body.cinematic .scene-art{transform:translateY(calc(var(--parallax,0)*14px))}
+  body.cinematic .scene.is-near .scene-art{will-change:transform}
+  body.cinematic .dvp-main,body.cinematic .management-main,body.cinematic .analytics-main,
+  body.cinematic .publicity-main,body.cinematic .wealth-main,body.cinematic .prueba-main,
+  body.cinematic .equipo-main,body.cinematic .global-main{transform:translateY(calc(var(--parallax,0)*-8px))}
+  body.cinematic .management-photo img{transform:scale(1.04) translateY(calc(var(--parallax,0)*-26px))}
+  body.cinematic .analysis-film img{transform:scale(1.05) translateY(calc(var(--parallax,0)*-24px))}
+  body.cinematic .wealth-photo img,body.cinematic .wellness-photo img{transform:translateY(calc(var(--parallax,0)*-22px)) scale(1.025)!important}
+  body.cinematic .hero-athlete img{transform:translate3d(calc(var(--parallax,0)*14px),calc(var(--parallax,0)*-30px),0)}
+  body.cinematic .wealth-photo-back{transform:rotate(-6deg) translateY(calc(var(--parallax,0)*34px))}
+  body.cinematic .prueba-photo{transform:rotate(-3deg) translateY(calc(var(--parallax,0)*28px))}
+  body.cinematic .team-photo{transform:rotate(-2deg) translateY(calc(var(--parallax,0)*24px))}
+  body.cinematic .dvp-photo{transform:rotate(-2deg) translateY(calc(var(--parallax,0)*30px))}
+}
+
+/* ===== Transición entre páginas (equivalente nativo de Barba, sin librería) ===== */
+@view-transition{navigation:auto}
+@keyframes vt-out{to{opacity:0}}
+@keyframes vt-in{from{opacity:0}}
+::view-transition-old(root){animation:vt-out .22s ease both}
+::view-transition-new(root){animation:vt-in .34s ease both}
+@media(prefers-reduced-motion:reduce){
+  ::view-transition-old(root),::view-transition-new(root){animation:none}
+  .rv,.rw{opacity:1!important;transform:none!important}
+}
+
+/* ===== Excepción acotada para teléfonos =====
+   El bloque de arriba apaga toda animación y transición dentro de .scene. Aquí se
+   devuelve la transición solo a los elementos marcados: una pasada, sin filtros ni
+   bucles. */
+@media(max-width:760px), (pointer:coarse) and (max-width:1024px) and (max-height:619px){
+  body.frame-phone.cinematic .scene .rv,
+  body.frame-phone.cinematic .scene .rw{transform:translateY(.3em)}
+  body.frame-phone.cinematic .scene.is-active .rv,
+  body.frame-phone.cinematic .scene.is-active .rw{
+    transform:none;
+    transition:opacity .38s ease, transform .38s cubic-bezier(.22,.75,.24,1)!important;
+    transition-delay:calc(min(var(--i,0),8)*34ms)!important;
+  }
+  body.frame-phone.cinematic .scene:not(.is-active) .rv,
+  body.frame-phone.cinematic .scene:not(.is-active) .rw{
+    transition:opacity .2s ease!important;transition-delay:0s!important;
+  }
+}
