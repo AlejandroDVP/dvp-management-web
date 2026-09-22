@@ -82,5 +82,5 @@ Este repositorio no debe contener contratos, pasaportes, documentación fiscal, 
 
 ## Contacto público
 
-- `alejandro@dvp.football`
+- WhatsApp y teléfono (sin correo personal en la web)
 - `+52 55 4341 7223`
