@@ -57,7 +57,7 @@ window.mountDvpMobile = function mountDvpMobile() {
   // small viewport so browser toolbars never rebuild the journey mid-scroll.
   const PHONE_MAX_W = 760;
   const phone = () => frameW <= PHONE_MAX_W;
-  let settleRaf = 0, scrollEndTimer = 0, touching = false, lastScrollAt = 0;
+  let settleRaf = 0, scrollEndTimer = 0, touching = false, lastScrollAt = 0, scrollDir = 1;
   let calmReason = ''; // Why reading mode was chosen; visible in dvpExperience.status().
   let frameW = 0;
   let frameH = 0;
@@ -210,7 +210,7 @@ window.mountDvpMobile = function mountDvpMobile() {
   // Phones: a finger expects the page to follow it. Rest zones shrink to a short
   // slack (the settle needs one) and every travel is exactly one frame of scroll,
   // so the camera tracks the thumb 1:1 instead of pausing and then rushing.
-  const PHONE_HOLD_SCALE=.4, PHONE_TRAVEL=1;
+  const PHONE_HOLD_SCALE=.4, PHONE_TRAVEL=.8;
   function buildTimeline() {
     let t = 0;
     segments = []; stops = [];
@@ -347,7 +347,9 @@ window.mountDvpMobile = function mountDvpMobile() {
     if (ignoreScroll || body.classList.contains('dialog-open')) return;
     lastScrollAt=performance.now();
     if(cinematic){
-      targetY=clamp(window.scrollY-journey.offsetTop,0,total*frameH);
+      const next=clamp(window.scrollY-journey.offsetTop,0,total*frameH);
+      if(next!==targetY)scrollDir=next>targetY?1:-1;
+      targetY=next;
       requestFrame();
       if(phone())scheduleSettle();
     }
@@ -371,7 +373,10 @@ window.mountDvpMobile = function mountDvpMobile() {
     if(performance.now()-lastScrollAt<80){scheduleSettle();return;}
     const p=poseAt(targetY);
     if(p.from===p.to||p.local<.03||p.local>.97)return;
-    settleTo(p.local<.5?p.from:p.to);
+    // A pager feel: any real gesture in one direction completes that step. Only a
+    // tiny nudge (under 12% of the travel) returns to where it started.
+    const forward=scrollDir>0;
+    settleTo(forward ? (p.local>.12?p.to:p.from) : (p.local<.88?p.from:p.to));
   }
   function settleTo(index){
     const startY=window.scrollY, endY=journey.offsetTop+stops[index]*frameH;
