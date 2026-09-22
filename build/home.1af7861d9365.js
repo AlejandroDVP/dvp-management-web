@@ -210,7 +210,11 @@ window.mountDvpMobile = function mountDvpMobile() {
   // Phones: a finger expects the page to follow it. Rest zones shrink to a short
   // slack (the settle needs one) and every travel is exactly one frame of scroll,
   // so the camera tracks the thumb 1:1 instead of pausing and then rushing.
-  const PHONE_HOLD_SCALE=.4, PHONE_TRAVEL=.8;
+  const PHONE_HOLD_SCALE=.12, PHONE_TRAVEL=.8;
+  // Phones let the browser do the settling: one native snap point per scene and at most
+  // one scene per gesture. The JS settle below stays as a fallback for older browsers.
+  const nativeSnap = typeof CSS!=='undefined' && CSS.supports && CSS.supports('scroll-snap-type','y mandatory');
+  let snapPoints=[];
   function buildTimeline() {
     let t = 0;
     segments = []; stops = [];
@@ -229,8 +233,18 @@ window.mountDvpMobile = function mountDvpMobile() {
     });
     total=t;
     journey.style.setProperty('--journey-height',`${Math.ceil((total+1)*frameH)}px`);
+    syncSnapPoints();
     journey.style.setProperty('--frame-w',`${frameW}px`);
     journey.style.setProperty('--frame-h',`${frameH}px`);
+  }
+
+  function syncSnapPoints() {
+    const on = nativeSnap && phone() && cinematic;
+    document.documentElement.classList.toggle('snap-scenes', on);
+    if(!on){snapPoints.forEach(el=>el.remove());snapPoints=[];return;}
+    while(snapPoints.length<scenes.length){const el=document.createElement('i');el.className='snap-point';el.setAttribute('aria-hidden','true');journey.appendChild(el);snapPoints.push(el);}
+    while(snapPoints.length>scenes.length)snapPoints.pop().remove();
+    snapPoints.forEach((el,i)=>{el.style.top=(stops[i]*frameH).toFixed(1)+'px';});
   }
 
   function activate(index) {
@@ -363,6 +377,7 @@ window.mountDvpMobile = function mountDvpMobile() {
     clearTimeout(scrollEndTimer);scrollEndTimer=0;
   }
   function scheduleSettle(){
+    if(nativeSnap && phone())return; // The browser snaps; never fight it.
     clearTimeout(scrollEndTimer);
     if(settleRaf)return;
     scrollEndTimer=setTimeout(settleIfIdle,90);
@@ -478,6 +493,7 @@ window.mountDvpMobile = function mountDvpMobile() {
       atlas.style.removeProperty('transform');
       journey.style.removeProperty('--journey-height');
       viewport.style.removeProperty('background');
+      syncSnapPoints();
       scenes.forEach(scene=>{scene.inert=false;scene.classList.add('is-near');scene.style.removeProperty('--parallax');scene.style.removeProperty('transform');});
       activeIndex=-1;activate(previousIndex);
       if(preserve)requestAnimationFrame(()=>window.scrollTo(0,
@@ -527,7 +543,9 @@ window.mountDvpMobile = function mountDvpMobile() {
     cancelSettle();
     if(cinematic && smooth && phone()){
       // Phones have no camera easing, so a tap on a link glides instead of cutting.
-      settleTo(index);
+      // With native snap the browser's own smooth scroll lands exactly on the snap point.
+      if(nativeSnap)window.scrollTo({top:journey.offsetTop+stops[index]*frameH,behavior:'smooth'});
+      else settleTo(index);
     }else if(cinematic){
       currentY=targetY=stops[index]*frameH;
       ignoreScroll=true;
@@ -570,7 +588,10 @@ window.mountDvpMobile = function mountDvpMobile() {
     listen(window,'scroll',onScroll,{passive:true});
     listen(window,'touchstart',()=>{touching=true;cancelSettle();},{passive:true});
     listen(window,'touchend',()=>{touching=false;if(cinematic&&phone())scheduleSettle();},{passive:true});
-    listen(window,'touchcancel',()=>{touching=false;},{passive:true});
+    // iOS hands a drag over to the scroller with touchcancel, not touchend: settle then too.
+    listen(window,'touchcancel',()=>{touching=false;if(cinematic&&phone())scheduleSettle();},{passive:true});
+    listen(window,'pointerup',()=>{touching=false;if(cinematic&&phone())scheduleSettle();},{passive:true});
+    listen(window,'pointercancel',()=>{touching=false;if(cinematic&&phone())scheduleSettle();},{passive:true});
     if('onscrollend' in window)listen(window,'scrollend',()=>{if(cinematic&&phone())settleIfIdle();},{passive:true});
     listen(window,'resize',onResize,{passive:true});
     if(window.visualViewport)listen(window.visualViewport,'resize',onResize,{passive:true});
@@ -670,7 +691,7 @@ window.mountDvpMobile = function mountDvpMobile() {
     window.dvpExperience=Object.freeze({
       goTo:id=>goTo(id,{hash:false}),
       refresh:()=>setMode(true),
-      status:()=>({mode:cinematic?'cinematic':'calm',calmReason,motion:!userPaused && !reduceMotion.matches,phone:phone(),layoutScale:body.style.getPropertyValue('--layout-scale')||'1',scene:scenes[Math.max(activeIndex,0)].id,frame:[frameW,frameH],checkpoints:stops.map((t,i)=>({id:scenes[i].id,y:t*frameH})),scrollLength:total*frameH,brand:lastBrandPose,dvd:{x:dvdX,y:dvdY,reflections:dvdHits}})
+      status:()=>({mode:cinematic?'cinematic':'calm',calmReason,snap:document.documentElement.classList.contains('snap-scenes'),motion:!userPaused && !reduceMotion.matches,phone:phone(),layoutScale:body.style.getPropertyValue('--layout-scale')||'1',scene:scenes[Math.max(activeIndex,0)].id,frame:[frameW,frameH],checkpoints:stops.map((t,i)=>({id:scenes[i].id,y:t*frameH})),scrollLength:total*frameH,brand:lastBrandPose,dvd:{x:dvdX,y:dvdY,reflections:dvdHits}})
     });
   }
   try{init();}catch(error){
