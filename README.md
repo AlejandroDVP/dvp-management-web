@@ -83,4 +83,4 @@ Este repositorio no debe contener contratos, pasaportes, documentación fiscal, 
 ## Contacto público
 
 - WhatsApp y teléfono (sin correo personal en la web)
-- `+52 55 4341 7223`
+- WhatsApp (el número no se muestra en la web)
