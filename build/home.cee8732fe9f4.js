@@ -246,7 +246,10 @@ window.mountDvpMobile = function mountDvpMobile() {
     body.classList.toggle('ui-dark',scene.dataset.color === 'dark');
     body.dataset.scene=scene.id; // Phones hide the header wordmark once a scene shows its own.
     // Colour of the strip a collapsing phone toolbar reveals under the frame.
-    body.style.setProperty('--frame-fill',scene.dataset.color === 'dark' ? '#0f1a14' : '#dedfcc');
+    if(phone()){
+      const bg=getComputedStyle(scene);
+      viewport.style.background=bg.backgroundImage!=='none' ? bg.background : (scene.dataset.color === 'dark' ? '#0f1a14' : '#dedfcc');
+    }
     numberLabel.textContent = String(index+1).padStart(2,'0');
     sceneLabel.textContent = scene.dataset.label;
     const next=document.getElementById('next-scene'); if(next){next.setAttribute('aria-label',index<scenes.length-1?'Ir a la siguiente sección':'Volver al inicio');next.innerHTML=index<scenes.length-1?'↓':'↑';}
@@ -291,8 +294,13 @@ window.mountDvpMobile = function mountDvpMobile() {
       // phone GPU and Safari rasterises its tiles mid-scroll). Only the one or two
       // scenes that intersect the frame move, each as its own frame-sized layer.
       const move=`translate3d(${tx.toFixed(2)}px,${ty.toFixed(2)}px,0)`;
+      // Keep three layers warm: at rest the previous, current and next scene; while
+      // travelling, the two in flight plus the one after. A layer that already exists
+      // costs nothing when it enters the frame; one created mid-travel drops frames.
+      const warm = p.from===p.to ? [p.from-1,p.from,p.from+1] : [p.from,p.to,p.to+1];
       scenes.forEach((scene,i) => {
-        const visible = Math.abs(positions[i][0]-p.x)<1 && Math.abs(positions[i][1]-p.y)<1;
+        const inFrame = Math.abs(positions[i][0]-p.x)<1 && Math.abs(positions[i][1]-p.y)<1;
+        const visible = inFrame || warm.includes(i);
         scene.classList.toggle('is-near',visible);
         if(visible)scene.style.transform=move;
       });
@@ -464,6 +472,7 @@ window.mountDvpMobile = function mountDvpMobile() {
       if(raf)cancelAnimationFrame(raf);raf=0;
       atlas.style.removeProperty('transform');
       journey.style.removeProperty('--journey-height');
+      viewport.style.removeProperty('background');
       scenes.forEach(scene=>{scene.inert=false;scene.classList.add('is-near');scene.style.removeProperty('--parallax');scene.style.removeProperty('transform');});
       activeIndex=-1;activate(previousIndex);
       if(preserve)requestAnimationFrame(()=>window.scrollTo(0,

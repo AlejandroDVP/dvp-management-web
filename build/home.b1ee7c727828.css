@@ -1237,3 +1237,42 @@ body.cinematic .viewport, body.cinematic .scene { overflow:clip; }
   .contact .m-contact-body .contact-social b{font-size:14px}
   .contact .m-contact-body .contact-social small{font-size:10px}
 }
+
+/* ===== Ajustes tras la prueba en iPhone (2026-09-22) ===== */
+/* La escena activa pinta también la franja que deja la barra del navegador. */
+body.frame-phone.cinematic .journey{background:#dedfcc}
+/* Así se nota: línea de tiempo vertical dentro del texto, fondo lima. */
+.prueba-ground{background:linear-gradient(90deg,rgba(226,240,190,.96),rgba(226,240,190,.78) 50%,rgba(213,237,90,.30)),url("../assets/gradient-1.webp") center/cover}
+.steps{position:relative;gap:0;padding-left:30px}
+.steps::before{content:"";position:absolute;left:8px;top:14px;bottom:14px;width:2px;background:currentColor;opacity:.28}
+.steps li{position:relative;grid-template-columns:118px 1fr;border:0!important;padding:10px 0}
+.steps li::before{content:"";position:absolute;left:-30px;top:14px;width:18px;height:18px;border-radius:50%;background:var(--lime);border:2px solid currentColor;box-sizing:border-box}
+.prueba-steps{top:50%;transform:translateY(-50%)}
+@media(max-width:760px), (pointer:coarse) and (max-width:1024px) and (max-height:619px){
+  /* Pantallas altas: el arte no se estira sin límite, se centra en su fila. */
+  .mobile-layout>.m-art{align-self:center;height:clamp(150px,40svh,380px);min-height:0}
+  body.frame-compact .mobile-layout>.m-art,body.frame-tight .mobile-layout>.m-art{height:auto;align-self:stretch}
+  .mobile-layout>.m-art.m-storyboard{height:auto!important;align-self:center;min-height:0}
+  .mobile-layout>.m-art.m-dvp-art{height:clamp(150px,38svh,330px)}
+  .mobile-layout>.m-art.m-equipo-art{height:clamp(96px,30svh,260px)}
+  body.frame-compact .m-equipo-art,body.frame-tight .m-equipo-art{height:auto}
+  .m-net .net-map{inset:auto;left:0;top:50%;transform:translateY(-50%)}
+  .prueba{background:linear-gradient(180deg,rgba(226,240,190,.97),rgba(226,240,190,.82) 55%,rgba(213,237,90,.45)),url('../assets/gradient-1.webp') center/cover;color:#19210e}
+  .prueba .mobile-layout{grid-template-rows:auto auto;align-content:center;gap:16px}
+  .m-prueba-art{display:none}
+  .prueba .m-body .steps{padding-left:26px}
+  .prueba .m-body .steps::before{left:7px;top:12px;bottom:12px}
+  .prueba .m-body .steps li{grid-template-columns:1fr;gap:2px;padding:7px 0;border:0}
+  .prueba .m-body .steps li::before{left:-26px;top:10px;width:16px;height:16px}
+  .prueba .m-body .steps b{font-size:9.5px;letter-spacing:.1em}
+  .prueba .m-body .steps span{font-size:13.5px;line-height:1.35}
+  .prueba .m-body .proof-note{margin-top:14px;padding:9px 11px;font-size:11px;line-height:1.4;border-color:rgba(21,24,17,.4)}
+}
+@media(max-width:760px), (pointer:coarse) and (max-width:1024px) and (max-height:619px){
+  /* The art fills its row up to a cap and never overflows it (percent heights resolve against the grid area). */
+  .mobile-layout>.m-art{height:100%;max-height:min(40svh,380px)}
+  .mobile-layout>.m-art.m-dvp-art{max-height:min(38svh,330px)}
+  .mobile-layout>.m-art.m-equipo-art{height:100%;max-height:min(30svh,260px)}
+  .mobile-layout>.m-art.m-storyboard{height:auto!important;max-height:none}
+  body.frame-compact .mobile-layout>.m-art,body.frame-tight .mobile-layout>.m-art{height:100%;max-height:none;align-self:stretch}
+}
