@@ -4,7 +4,7 @@
   "headers": [
     {"source":"/assets/:path*","headers":[{"key":"Cache-Control","value":"public, max-age=86400"}]},
     {"source":"/build/:path*","headers":[{"key":"Cache-Control","value":"public, max-age=31536000, immutable"}]},
-    {"source":"/:path*","headers":[{"key":"X-Content-Type-Options","value":"nosniff"},{"key":"Referrer-Policy","value":"strict-origin-when-cross-origin"}]}
+    {"source":"/(.*)","headers":[{"key":"X-Content-Type-Options","value":"nosniff"},{"key":"Referrer-Policy","value":"strict-origin-when-cross-origin"}]}
   ],
   "redirects": [
     {"source":"/:path*","has":[{"type":"host","value":"www.dvp.football"}],"destination":"https://dvp.football/:path*","permanent":true},
@@ -15,6 +15,7 @@
     {"source":"/videoanalisis-futbolistas/index.html","destination":"/videoanalisis-futbolistas/","permanent":true},
     {"source":"/bienestar-futbolistas/index.html","destination":"/bienestar-futbolistas/","permanent":true},
     {"source":"/sobre-dvp/index.html","destination":"/sobre-dvp/","permanent":true},
+    {"source":"/clubes/index.html","destination":"/clubes/","permanent":true},
     {"source":"/guia-primer-contacto-agencia/index.html","destination":"/guia-primer-contacto-agencia/","permanent":true}
   ]
 }

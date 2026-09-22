@@ -29,13 +29,15 @@ window.mountDvpMobile = function mountDvpMobile() {
   // travel: frames spent flying to the next scene (phones override both, see buildTimeline).
   const timelineById={
     inicio:{pos:[0,0],hold:.18,travel:.95},
-    management:{pos:[0,1],hold:.52,travel:.92},
-    wealth:{pos:[1,1],hold:.60,travel:.96},
-    publicity:{pos:[1,2],hold:.55,travel:.94},
-    analytics:{pos:[2,2],hold:.48,travel:.97},
-    wellness:{pos:[2,1],hold:.67,travel:.96},
-    mundo:{pos:[3,1],hold:.50,travel:1.02},
-    contacto:{pos:[3,2],hold:0,travel:0}
+    dvp:{pos:[0,1],hold:.55,travel:.92},
+    representacion:{pos:[1,1],hold:.52,travel:.92},
+    performance:{pos:[1,2],hold:.60,travel:.96},
+    brand:{pos:[2,2],hold:.55,travel:.94},
+    future:{pos:[2,1],hold:.55,travel:.96},
+    prueba:{pos:[3,1],hold:.55,travel:.96},
+    mundo:{pos:[3,2],hold:.50,travel:.98},
+    equipo:{pos:[4,2],hold:.55,travel:1.02},
+    contacto:{pos:[4,1],hold:0,travel:0}
   };
   scenes.forEach(s=>{if(!timelineById[s.id])console.error('DVP: la escena "'+s.id+'" no tiene entrada en timelineById; la cámara no la conoce.');});
   const timeline=scenes.map(s=>timelineById[s.id] || {pos:[0,0],hold:.5,travel:.95});
@@ -43,7 +45,7 @@ window.mountDvpMobile = function mountDvpMobile() {
   const holds = timeline.map(t=>t.hold);
   const travels = timeline.map(t=>t.travel);
   // Poses are keyed by scene, so changing editorial order never changes a destination.
-  const desktopGlobeById={inicio:[.923,.34,98,0],management:[.88,.28,93,1],wealth:[.28,.55,145,0],publicity:[.87,.72,108,0],analytics:[.37,.66,83,1],wellness:[.236,.50,113,1],mundo:[.417,.73,115,1],contacto:[.87,.32,120,0]};
+  const desktopGlobeById={inicio:[.923,.34,98,0],dvp:[.88,.28,93,1],representacion:[.88,.28,93,1],performance:[.37,.66,83,1],brand:[.87,.72,108,0],future:[.28,.55,145,0],prueba:[.87,.72,100,0],mundo:[.417,.73,115,1],equipo:[.236,.50,113,1],contacto:[.87,.32,120,0]};
   const globeDesktop=scenes.map(s=>desktopGlobeById[s.id]);
   const globeTablet=globeDesktop.map(p=>[p[0],p[1],p[2]*.73,p[3]]);
   const primaryLogoHome = document.querySelector('[data-primary-logo-home]');
@@ -55,7 +57,7 @@ window.mountDvpMobile = function mountDvpMobile() {
   // small viewport so browser toolbars never rebuild the journey mid-scroll.
   const PHONE_MAX_W = 760;
   const phone = () => frameW <= PHONE_MAX_W;
-  let settleRaf = 0, scrollEndTimer = 0, touching = false, lastScrollAt = 0;
+  let settleRaf = 0, scrollEndTimer = 0, touching = false, lastScrollAt = 0, scrollDir = 1;
   let calmReason = ''; // Why reading mode was chosen; visible in dvpExperience.status().
   let frameW = 0;
   let frameH = 0;
@@ -117,6 +119,7 @@ window.mountDvpMobile = function mountDvpMobile() {
     });
     globeAnchors=frameW<=760 ? scenes.map(scene=>{
       const slot=scene.querySelector('.m-globe-slot');
+      if(!slot)return [.5,.5,60,Number(scene.classList.contains('dark'))]; // Scenes without a globe slot.
       const b=localBox(slot,scene);
       return [(b.x+b.w/2)/frameW,(b.y+b.h/2)/frameH,b.w,Number(slot.dataset.light)];
     }) : frameW<=900 ? globeTablet : globeDesktop;
@@ -207,7 +210,11 @@ window.mountDvpMobile = function mountDvpMobile() {
   // Phones: a finger expects the page to follow it. Rest zones shrink to a short
   // slack (the settle needs one) and every travel is exactly one frame of scroll,
   // so the camera tracks the thumb 1:1 instead of pausing and then rushing.
-  const PHONE_HOLD_SCALE=.4, PHONE_TRAVEL=1;
+  const PHONE_HOLD_SCALE=.12, PHONE_TRAVEL=.8;
+  // Phones let the browser do the settling: one native snap point per scene and at most
+  // one scene per gesture. The JS settle below stays as a fallback for older browsers.
+  const nativeSnap = typeof CSS!=='undefined' && CSS.supports && CSS.supports('scroll-snap-type','y mandatory');
+  let snapPoints=[];
   function buildTimeline() {
     let t = 0;
     segments = []; stops = [];
@@ -226,8 +233,18 @@ window.mountDvpMobile = function mountDvpMobile() {
     });
     total=t;
     journey.style.setProperty('--journey-height',`${Math.ceil((total+1)*frameH)}px`);
+    syncSnapPoints();
     journey.style.setProperty('--frame-w',`${frameW}px`);
     journey.style.setProperty('--frame-h',`${frameH}px`);
+  }
+
+  function syncSnapPoints() {
+    const on = nativeSnap && phone() && cinematic;
+    document.documentElement.classList.toggle('snap-scenes', on);
+    if(!on){snapPoints.forEach(el=>el.remove());snapPoints=[];return;}
+    while(snapPoints.length<scenes.length){const el=document.createElement('i');el.className='snap-point';el.setAttribute('aria-hidden','true');journey.appendChild(el);snapPoints.push(el);}
+    while(snapPoints.length>scenes.length)snapPoints.pop().remove();
+    snapPoints.forEach((el,i)=>{el.style.top=(stops[i]*frameH).toFixed(1)+'px';});
   }
 
   function activate(index) {
@@ -243,7 +260,10 @@ window.mountDvpMobile = function mountDvpMobile() {
     body.classList.toggle('ui-dark',scene.dataset.color === 'dark');
     body.dataset.scene=scene.id; // Phones hide the header wordmark once a scene shows its own.
     // Colour of the strip a collapsing phone toolbar reveals under the frame.
-    body.style.setProperty('--frame-fill',scene.dataset.color === 'dark' ? '#0f1a14' : '#dedfcc');
+    if(phone()){
+      const bg=getComputedStyle(scene);
+      viewport.style.background=bg.backgroundImage!=='none' ? bg.background : (scene.dataset.color === 'dark' ? '#0f1a14' : '#dedfcc');
+    }
     numberLabel.textContent = String(index+1).padStart(2,'0');
     sceneLabel.textContent = scene.dataset.label;
     const next=document.getElementById('next-scene'); if(next){next.setAttribute('aria-label',index<scenes.length-1?'Ir a la siguiente sección':'Volver al inicio');next.innerHTML=index<scenes.length-1?'↓':'↑';}
@@ -288,8 +308,13 @@ window.mountDvpMobile = function mountDvpMobile() {
       // phone GPU and Safari rasterises its tiles mid-scroll). Only the one or two
       // scenes that intersect the frame move, each as its own frame-sized layer.
       const move=`translate3d(${tx.toFixed(2)}px,${ty.toFixed(2)}px,0)`;
+      // Keep three layers warm: at rest the previous, current and next scene; while
+      // travelling, the two in flight plus the one after. A layer that already exists
+      // costs nothing when it enters the frame; one created mid-travel drops frames.
+      const warm = p.from===p.to ? [p.from-1,p.from,p.from+1] : [p.from,p.to,p.to+1];
       scenes.forEach((scene,i) => {
-        const visible = Math.abs(positions[i][0]-p.x)<1 && Math.abs(positions[i][1]-p.y)<1;
+        const inFrame = Math.abs(positions[i][0]-p.x)<1 && Math.abs(positions[i][1]-p.y)<1;
+        const visible = inFrame || warm.includes(i);
         scene.classList.toggle('is-near',visible);
         if(visible)scene.style.transform=move;
       });
@@ -336,7 +361,9 @@ window.mountDvpMobile = function mountDvpMobile() {
     if (ignoreScroll || body.classList.contains('dialog-open')) return;
     lastScrollAt=performance.now();
     if(cinematic){
-      targetY=clamp(window.scrollY-journey.offsetTop,0,total*frameH);
+      const next=clamp(window.scrollY-journey.offsetTop,0,total*frameH);
+      if(next!==targetY)scrollDir=next>targetY?1:-1;
+      targetY=next;
       requestFrame();
       if(phone())scheduleSettle();
     }
@@ -350,6 +377,7 @@ window.mountDvpMobile = function mountDvpMobile() {
     clearTimeout(scrollEndTimer);scrollEndTimer=0;
   }
   function scheduleSettle(){
+    if(nativeSnap && phone())return; // The browser snaps; never fight it.
     clearTimeout(scrollEndTimer);
     if(settleRaf)return;
     scrollEndTimer=setTimeout(settleIfIdle,90);
@@ -360,7 +388,10 @@ window.mountDvpMobile = function mountDvpMobile() {
     if(performance.now()-lastScrollAt<80){scheduleSettle();return;}
     const p=poseAt(targetY);
     if(p.from===p.to||p.local<.03||p.local>.97)return;
-    settleTo(p.local<.5?p.from:p.to);
+    // A pager feel: any real gesture in one direction completes that step. Only a
+    // tiny nudge (under 12% of the travel) returns to where it started.
+    const forward=scrollDir>0;
+    settleTo(forward ? (p.local>.12?p.to:p.from) : (p.local<.88?p.from:p.to));
   }
   function settleTo(index){
     const startY=window.scrollY, endY=journey.offsetTop+stops[index]*frameH;
@@ -461,6 +492,8 @@ window.mountDvpMobile = function mountDvpMobile() {
       if(raf)cancelAnimationFrame(raf);raf=0;
       atlas.style.removeProperty('transform');
       journey.style.removeProperty('--journey-height');
+      viewport.style.removeProperty('background');
+      syncSnapPoints();
       scenes.forEach(scene=>{scene.inert=false;scene.classList.add('is-near');scene.style.removeProperty('--parallax');scene.style.removeProperty('transform');});
       activeIndex=-1;activate(previousIndex);
       if(preserve)requestAnimationFrame(()=>window.scrollTo(0,
@@ -482,6 +515,7 @@ window.mountDvpMobile = function mountDvpMobile() {
   function syncMotionButton() {
     const paused = userPaused || reduceMotion.matches;
     body.classList.toggle('motion-paused', paused);
+    if(!motionButton||!motionLabel)return; // The HUD no longer ships a pause button.
     motionButton.setAttribute('aria-pressed',String(paused));
     motionButton.title=paused?'Activar las animaciones':'Pausar las animaciones';
     motionButton.setAttribute('aria-label',motionButton.title);
@@ -509,7 +543,9 @@ window.mountDvpMobile = function mountDvpMobile() {
     cancelSettle();
     if(cinematic && smooth && phone()){
       // Phones have no camera easing, so a tap on a link glides instead of cutting.
-      settleTo(index);
+      // With native snap the browser's own smooth scroll lands exactly on the snap point.
+      if(nativeSnap)window.scrollTo({top:journey.offsetTop+stops[index]*frameH,behavior:'smooth'});
+      else settleTo(index);
     }else if(cinematic){
       currentY=targetY=stops[index]*frameH;
       ignoreScroll=true;
@@ -552,7 +588,10 @@ window.mountDvpMobile = function mountDvpMobile() {
     listen(window,'scroll',onScroll,{passive:true});
     listen(window,'touchstart',()=>{touching=true;cancelSettle();},{passive:true});
     listen(window,'touchend',()=>{touching=false;if(cinematic&&phone())scheduleSettle();},{passive:true});
-    listen(window,'touchcancel',()=>{touching=false;},{passive:true});
+    // iOS hands a drag over to the scroller with touchcancel, not touchend: settle then too.
+    listen(window,'touchcancel',()=>{touching=false;if(cinematic&&phone())scheduleSettle();},{passive:true});
+    listen(window,'pointerup',()=>{touching=false;if(cinematic&&phone())scheduleSettle();},{passive:true});
+    listen(window,'pointercancel',()=>{touching=false;if(cinematic&&phone())scheduleSettle();},{passive:true});
     if('onscrollend' in window)listen(window,'scrollend',()=>{if(cinematic&&phone())settleIfIdle();},{passive:true});
     listen(window,'resize',onResize,{passive:true});
     if(window.visualViewport)listen(window.visualViewport,'resize',onResize,{passive:true});
@@ -573,7 +612,7 @@ window.mountDvpMobile = function mountDvpMobile() {
       requestAnimationFrame(()=>scenes[Math.max(0,activeIndex)].focus({preventScroll:true}));
     });
     // "Pausar" only stops the decorative animations. The camera is the site.
-    motionButton.addEventListener('click',()=>{
+    if(motionButton)motionButton.addEventListener('click',()=>{
       userPaused=!userPaused;safeStore(userPaused?'paused':'auto');
       syncMotionButton();syncDvd();
     });
@@ -652,7 +691,7 @@ window.mountDvpMobile = function mountDvpMobile() {
     window.dvpExperience=Object.freeze({
       goTo:id=>goTo(id,{hash:false}),
       refresh:()=>setMode(true),
-      status:()=>({mode:cinematic?'cinematic':'calm',calmReason,motion:!userPaused && !reduceMotion.matches,phone:phone(),layoutScale:body.style.getPropertyValue('--layout-scale')||'1',scene:scenes[Math.max(activeIndex,0)].id,frame:[frameW,frameH],checkpoints:stops.map((t,i)=>({id:scenes[i].id,y:t*frameH})),scrollLength:total*frameH,brand:lastBrandPose,dvd:{x:dvdX,y:dvdY,reflections:dvdHits}})
+      status:()=>({mode:cinematic?'cinematic':'calm',calmReason,snap:document.documentElement.classList.contains('snap-scenes'),motion:!userPaused && !reduceMotion.matches,phone:phone(),layoutScale:body.style.getPropertyValue('--layout-scale')||'1',scene:scenes[Math.max(activeIndex,0)].id,frame:[frameW,frameH],checkpoints:stops.map((t,i)=>({id:scenes[i].id,y:t*frameH})),scrollLength:total*frameH,brand:lastBrandPose,dvd:{x:dvdX,y:dvdY,reflections:dvdHits}})
     });
   }
   try{init();}catch(error){
@@ -683,11 +722,10 @@ window.dvpUnmount = window.mountDvpMobile();
 (()=>{
   'use strict';
   const configs=[
-    {key:'management',desktop:'.management-photo',mobile:'.m-photo-block',title:'DVP Football Management',headline:'Tu carrera, acompañada.',summary:'Representación y estrategia deportiva para acompañar las decisiones que marcan cada etapa de tu carrera.'},
-    {key:'wealth',desktop:'.wealth-photo',mobile:'.organic-wealth',title:'DVP Wealth Consulting',headline:'Construye también fuera del campo.',summary:'Una visión ordenada para proteger y proyectar el patrimonio que construyes durante tu carrera.'},
-    {key:'publicity',desktop:'.publicity-one',mobile:'.m-pub-one',title:'DVP Publicity',headline:'Tu imagen también juega.',summary:'Posicionamiento, imagen y oportunidades comerciales alineadas con tu identidad y tu carrera.'},
-    {key:'analytics',desktop:'.analysis-visual',mobile:'.m-analytics-art',title:'DVP Analytics',headline:'Entender para evolucionar.',summary:'Una lectura independiente de tu juego para aportar contexto a tu rendimiento y a tu evolución.'},
-    {key:'wellness',desktop:'.wellness-photo',mobile:'.organic-wellness',title:'DVP Wellness',headline:'Cuerpo. Cabeza. Fútbol.',summary:'Un enfoque integral de bienestar y rendimiento alrededor del jugador y de sus necesidades.'}
+    {key:'management',scene:'representacion',desktop:'.management-photo',mobile:'.m-photo-block',title:'Representación · DVP Football Management',headline:'Primero, el fútbol.',summary:'Contratos, renovaciones, transferencias y plan de carrera: el núcleo alrededor del que se coordina todo lo demás.'},
+    {key:'wealth',scene:'future',desktop:'.wealth-photo',mobile:'.organic-wealth',title:'Future · DVP Wealth Consulting',headline:'Construye también fuera del campo.',summary:'Una visión ordenada para proteger y proyectar el patrimonio que construyes durante tu carrera.'},
+    {key:'publicity',scene:'brand',desktop:'.publicity-one',mobile:'.m-pub-one',title:'Brand · DVP Publicity',headline:'Tu imagen también juega.',summary:'Posicionamiento, imagen y oportunidades comerciales alineadas con tu identidad y tu carrera.'},
+    {key:'performance',scene:'performance',desktop:'.analysis-storyboard',mobile:'.m-storyboard',title:'Performance · DVP Analytics + DVP Wellness',headline:'Tu equipo fuera del campo.',summary:'Análisis de tus partidos y especialistas coordinados alrededor de una única prioridad: que estés preparado para rendir.'}
   ];
 
   const openService=(key,scene)=>{
@@ -695,7 +733,7 @@ window.dvpUnmount = window.mountDvpMobile();
     if(trigger){trigger.click();return;}
     const dialog=document.getElementById(`service-${key}`);
     if(dialog && typeof dialog.showModal==='function' && !dialog.open){dialog.showModal();return;}
-    const fallback={management:'representacion-futbolistas/',wealth:'patrimonio-futbolistas/',publicity:'marca-personal-futbolistas/',analytics:'videoanalisis-futbolistas/',wellness:'bienestar-futbolistas/'}[key];
+    const fallback={management:'representacion-futbolistas/',wealth:'patrimonio-futbolistas/',publicity:'marca-personal-futbolistas/',performance:'videoanalisis-futbolistas/'}[key];
     if(fallback) location.href=fallback;
   };
 
@@ -723,7 +761,7 @@ window.dvpUnmount = window.mountDvpMobile();
   };
 
   configs.forEach(cfg=>{
-    const scene=document.getElementById(cfg.key);
+    const scene=document.getElementById(cfg.scene||cfg.key);
     if(!scene) return;
     prepareCard(scene.querySelector(cfg.desktop),cfg,scene,false);
     prepareCard(scene.querySelector(cfg.mobile),cfg,scene,true);
