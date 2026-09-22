@@ -1276,3 +1276,30 @@ body.frame-phone.cinematic .journey{background:#dedfcc}
   .mobile-layout>.m-art.m-storyboard{height:auto!important;max-height:none}
   body.frame-compact .mobile-layout>.m-art,body.frame-tight .mobile-layout>.m-art{height:100%;max-height:none;align-self:stretch}
 }
+
+/* ===== Fotos del brandbook (2026-09-22) ===== */
+/* Future: dos piezas, arquitectura al frente y corredor sobre pared amarilla detrás. */
+.wealth-photo-back{position:absolute;right:24%;top:9%;width:27%;height:50%;margin:0;overflow:hidden;transform:rotate(6deg);z-index:2;box-shadow:0 14px 40px rgba(76,58,22,.16)}
+.wealth-photo-back img{width:100%;height:100%;object-fit:cover;object-position:35% 50%}
+.wealth-photo{right:3%;top:22%;width:33%;height:60%;z-index:3}
+.wealth-photo img{object-position:50% 40%}
+/* DVP: túnel al estadio detrás del diagrama. */
+.dvp-photo{position:absolute;right:5%;top:12%;width:40%;height:76%;overflow:hidden;z-index:2;opacity:.55;transform:rotate(-2deg)}
+.dvp-photo img{width:100%;height:100%;object-fit:cover;object-position:50% 40%;filter:saturate(.8)}
+.dvp-diagram{z-index:3}
+@media(max-width:760px), (pointer:coarse) and (max-width:1024px) and (max-height:619px){
+  .organic-wealth-back{inset:0 36% 18% 0;transform:rotate(5deg);z-index:1;box-shadow:6px 8px 0 #67592717}
+  .organic-wealth-back img{object-position:35% 50%}
+  .organic-wealth{inset:10% 0 0 28%;transform:rotate(-4deg);z-index:2}
+  .organic-wealth img{object-position:50% 40%}
+  .m-dvp-art .dvp-photo{inset:0 6%;width:auto;height:100%;opacity:.5;transform:rotate(-2deg)}
+  .m-dvp-art .dvp-system{position:relative;z-index:3}
+}
+@media(max-width:760px), (pointer:coarse) and (max-width:1024px) and (max-height:619px){
+  .future .wealth-slot{right:auto;left:2%;top:auto;bottom:0;width:52px;height:58px}
+}
+@media(min-width:761px){
+  /* The desktop layout keeps the Future photo on the left; the back piece peeks out above it. */
+  .wealth-photo-back{left:2%;right:auto;top:5%;width:25%;height:46%;transform:rotate(7deg)}
+  .wealth-photo{z-index:3}
+}
