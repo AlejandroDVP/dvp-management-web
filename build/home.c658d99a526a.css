@@ -1409,3 +1409,13 @@ html.snap-scenes .snap-point{position:absolute;left:0;width:1px;height:1px;point
 }
 /* Así se nota: pieza de portería en lugar de repetir la cancha */
 @media(min-width:761px){.prueba-photo{left:44%;bottom:6%;width:22%;aspect-ratio:auto;transform:rotate(-3deg)}}
+
+/* Perfiles profesionales e Instagram como contacto de cierre. */
+.team-cards{max-width:540px}
+.team-cards span{line-height:1.45}
+.contact .contact-links .contact-details{width:min(420px,100%)}
+.contact .contact-links .contact-social{margin-top:12px;padding:18px 0}
+.contact .contact-links .contact-social b{font-size:20px}
+@media(min-width:761px){
+  .team-photo{top:22%;height:58%}
+}

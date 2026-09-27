@@ -11,3 +11,6 @@ https://unsplash.com/de/fotos/leeres-fussballfeld-in-luftaufnahmen-raesgfwU7iM
 Licencia general: https://unsplash.com/license
 
 Descargas JPEG de hasta 2400 px de ancho desde images.unsplash.com. WebP optimizados sin alterar el contenido. Ambas imágenes inspeccionadas visualmente. No son instalaciones ni activos de DVP. Paquete para revisión; no se ha modificado ni publicado la web.
+
+tribuna-brandbook.png — 27 septiembre 2026
+Imagen de las gradas azules extraída sin alteraciones de DVP_BRANDBOOK.pdf, página 24 (Grid), proporcionado por el propietario. Reemplaza la foto provisional del equipo.
