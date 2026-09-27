@@ -1419,3 +1419,30 @@ html.snap-scenes .snap-point{position:absolute;left:0;width:1px;height:1px;point
 @media(min-width:761px){
   .team-photo{top:22%;height:58%}
 }
+
+/* Seis especialidades: lectura en dos columnas. */
+.equipo .team-cards{grid-template-columns:repeat(2,minmax(0,1fr));max-width:none;gap:8px}
+.equipo .team-cards li{align-content:start}
+@media(min-width:761px){
+  .equipo-main{top:12%}
+  .equipo-main h2{margin-top:18px}
+  .equipo-main .body-copy{margin-top:18px;max-width:540px}
+  .equipo .team-cards{margin-top:16px}
+  .equipo .team-cards li{padding:10px 12px}
+}
+@media(max-width:760px){
+  .equipo .mobile-layout{grid-template-rows:auto minmax(48px,1fr) auto;gap:8px}
+  .equipo .mobile-layout>.m-equipo-art{min-height:0;max-height:100px}
+  .equipo .m-body .team-cards{gap:5px}
+  .equipo .m-body .team-cards li{padding:7px 8px;gap:4px}
+  .equipo .m-body .team-cards b{font-size:12px;line-height:1.15}
+  .equipo .m-body .team-cards span{font-size:11px;line-height:1.35;letter-spacing:0}
+}
+@media(max-width:760px) and (max-height:740px){
+  .equipo .mobile-layout{padding-top:72px;padding-bottom:64px;grid-template-rows:auto auto;align-content:start;gap:12px}
+  .equipo .m-head .branch-logo-slot{width:150px;height:44px}
+  .equipo .m-title{font-size:44px!important;margin-top:10px!important}
+  .equipo .mobile-layout>.m-equipo-art{display:none}
+  .equipo .m-body>p{font-size:12px;line-height:1.35}
+  .equipo .m-body .team-cards li{padding:6px 7px;gap:3px}
+}
