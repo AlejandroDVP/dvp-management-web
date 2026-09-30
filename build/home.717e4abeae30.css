@@ -707,7 +707,10 @@ body.js-ready #representacion .service-actions{display:none!important}
   outline:none;
   transition:translate .34s cubic-bezier(.22,.75,.24,1),box-shadow .34s ease,filter .28s ease;
 }
-.dvp-service-card:focus-visible{box-shadow:0 0 0 3px rgba(245,245,232,.92),0 0 0 7px rgba(10,10,10,.35)!important}
+.dvp-service-card:focus-within{box-shadow:0 0 0 3px rgba(245,245,232,.92),0 0 0 7px rgba(10,10,10,.35)!important}
+
+.dvp-card-link{position:absolute;inset:0;z-index:45;border-radius:inherit}
+.dvp-card-link:focus-visible{outline:3px solid currentColor;outline-offset:-5px}
 
 .dvp-card-back{
   position:absolute;inset:0;z-index:30;box-sizing:border-box;
@@ -728,11 +731,11 @@ body.js-ready #representacion .service-actions{display:none!important}
 .dvp-card-wellness{--dvp-card-glow:rgba(206,255,62,.28)}
 
 @media (hover:hover) and (pointer:fine){
-  .dvp-service-card:hover,.dvp-service-card:focus-visible{translate:0 -4px}
-  .dvp-service-card:hover > img,.dvp-service-card:focus-visible > img,
-  .dvp-service-card:hover > .analysis-film,.dvp-service-card:focus-visible > .analysis-film{filter:brightness(.48) saturate(.78)!important}
-  .dvp-service-card:hover .dvp-card-back,.dvp-service-card:focus-visible .dvp-card-back{opacity:1;transform:translateY(0)}
-  #future .dvp-service-card:hover,#future .dvp-service-card:focus-visible{opacity:1!important;mix-blend-mode:normal!important;-webkit-mask-image:none!important;mask-image:none!important}
+  .dvp-service-card:hover,.dvp-service-card:focus-within{translate:0 -4px}
+  .dvp-service-card:hover > img,.dvp-service-card:focus-within > img,
+  .dvp-service-card:hover > .analysis-film,.dvp-service-card:focus-within > .analysis-film{filter:brightness(.48) saturate(.78)!important}
+  .dvp-service-card:hover .dvp-card-back,.dvp-service-card:focus-within .dvp-card-back{opacity:1;transform:translateY(0)}
+  #future .dvp-service-card:hover,#future .dvp-service-card:focus-within{opacity:1!important;mix-blend-mode:normal!important;-webkit-mask-image:none!important;mask-image:none!important}
 }
 
 @media (max-width:760px){

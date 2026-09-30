@@ -533,7 +533,6 @@ window.mountDvpMobile = function mountDvpMobile() {
   function closeDialogs() {
     if(indexDialog.open)indexDialog.close();
     if(infoDialog.open)infoDialog.close();
-    document.querySelectorAll('.service-dialog[open]').forEach(d=>d.close());
   }
   function goTo(id,{focus=false,hash=true,smooth=false}={}) {
     const clean=String(id).replace(/^#/,'');
@@ -646,31 +645,6 @@ window.mountDvpMobile = function mountDvpMobile() {
       }
     }));
 
-    document.querySelectorAll('[data-service-open]').forEach(button=>{
-      listen(button,'click',event=>{
-        if(event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)return;
-        const dialog=document.getElementById('service-'+button.dataset.serviceOpen);
-        if(!dialog || typeof dialog.showModal!=='function')return;
-        event.preventDefault();
-        closeDialogs();
-        dialog.showModal();dialog.scrollTop=0;markDialogOpen();
-        body.classList.add('service-reading');syncDvd();
-        button.setAttribute('aria-expanded','true');
-      });
-    });
-    document.querySelectorAll('.service-dialog').forEach(dialog=>{
-      listen(dialog,'close',()=>{
-        body.classList.remove('service-reading');syncDvd();
-        document.querySelectorAll('[data-service-open]').forEach(b=>b.setAttribute('aria-expanded','false'));
-      });
-      listen(dialog,'click',event=>{
-        if(event.target!==dialog)return;
-        const rect=dialog.getBoundingClientRect();
-        if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)dialog.close();
-      });
-      dialog.querySelectorAll('[data-service-close]').forEach(b=>listen(b,'click',()=>dialog.close()));
-    });
-
     // Subscribe after the document's first frame: a media object created while
     // an embedded preview is still parsing may not dispatch later changes.
     mediaRaf=requestAnimationFrame(()=>{
@@ -718,7 +692,7 @@ window.mountDvpMobile = function mountDvpMobile() {
    parsed by now and the motion layer can mount directly (no framework needed). */
 window.dvpUnmount = window.mountDvpMobile();
 
-/* ===== Service cards (runs after the camera has wired the dialogs) (was build/service-cards.016f4a5fee28.js) ===== */
+/* ===== Service photo links (was build/service-cards.016f4a5fee28.js) ===== */
 (()=>{
   'use strict';
   const configs=[
@@ -728,24 +702,17 @@ window.dvpUnmount = window.mountDvpMobile();
     {key:'performance',scene:'performance',desktop:'.analysis-storyboard',mobile:'.m-storyboard',title:'Performance · DVP Analytics + DVP Wellness',headline:'Tu equipo fuera del campo.',summary:'Análisis de tus partidos y especialistas coordinados alrededor de una única prioridad: que estés preparado para rendir.'}
   ];
 
-  const openService=(key,scene)=>{
-    const trigger=scene?.querySelector(`.service-open[data-service-open="${key}"]`);
-    if(trigger){trigger.click();return;}
-    const dialog=document.getElementById(`service-${key}`);
-    if(dialog && typeof dialog.showModal==='function' && !dialog.open){dialog.showModal();return;}
-    const fallback={management:'representacion-futbolistas/',wealth:'patrimonio-futbolistas/',publicity:'marca-personal-futbolistas/',performance:'videoanalisis-futbolistas/'}[key];
-    if(fallback) location.href=fallback;
-  };
-
   const prepareCard=(card,cfg,scene,isMobile=false)=>{
-    if(!card || card.dataset.dvpCardReady==='1') return;
+    const destination=scene.querySelector('a.service-open')?.href;
+    if(!card || !destination || card.dataset.dvpCardReady==='1') return;
     card.dataset.dvpCardReady='1';
     card.classList.add('dvp-service-card',`dvp-card-${cfg.key}`);
     if(getComputedStyle(card).position==='static') card.style.position='relative';
     card.removeAttribute('aria-hidden');
-    card.setAttribute('role','button');
-    card.setAttribute('tabindex','0');
-    card.setAttribute('aria-label',`Abrir información de ${cfg.title}`);
+    const link=document.createElement('a');
+    link.className='dvp-card-link';
+    link.href=destination;
+    link.setAttribute('aria-label',`Abrir información de ${cfg.title}`);
 
     if(!isMobile){
       const back=document.createElement('div');
@@ -755,9 +722,7 @@ window.dvpUnmount = window.mountDvpMobile();
       card.appendChild(back);
     }
 
-    const open=()=>openService(cfg.key,scene);
-    card.addEventListener('click',open);
-    card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
+    card.appendChild(link);
   };
 
   configs.forEach(cfg=>{
