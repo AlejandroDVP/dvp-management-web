@@ -80,7 +80,6 @@ Mapa de archivos:
 
 Este repositorio no debe contener contratos, pasaportes, documentación fiscal, información médica, credenciales, archivos de negociación ni datos privados de jugadores. Los secretos, si se incorporan en el futuro, deben almacenarse como variables de entorno en Vercel y nunca commitearse.
 
-## Contacto público
+## Sitio informativo
 
-- WhatsApp y teléfono (sin correo personal en la web)
-- WhatsApp (el número no se muestra en la web)
+No publicar botones ni enlaces para iniciar contacto, enviar mensajes o solicitar representación. Esta regla abarca portadas, páginas internas, diálogos y página 404. Los enlaces de navegación entre servicios e información institucional se conservan.
