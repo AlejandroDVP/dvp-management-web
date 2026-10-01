@@ -415,8 +415,18 @@ window.mountDvpMobile = function mountDvpMobile() {
     let ratio=1;
     scenes.forEach(scene=>{
       const layout=scene.querySelector('.mobile-layout') || scene.querySelector('.hero-unified');
-      if(!layout || getComputedStyle(layout).display!=='grid')return;
+      if(!layout)return;
       const style=getComputedStyle(layout);
+      // Keep the mobile team pyramid readable; short screens use document flow.
+      if(scene.id==='equipo' && style.display==='flex'){
+        const children=[...layout.children].filter(el=>getComputedStyle(el).display!=='none');
+        const content=children.reduce((sum,el)=>sum+Math.max(el.offsetHeight,el.scrollHeight),0);
+        const required=content+(parseFloat(style.rowGap)||0)*Math.max(0,children.length-1);
+        const available=height-(parseFloat(style.paddingTop)||0)-(parseFloat(style.paddingBottom)||0);
+        if(required>available+1){const fit=available/required;ratio=Math.min(ratio,fit>=.9?fit:0);}
+        return;
+      }
+      if(style.display!=='grid')return;
       const rows=style.gridTemplateRows.split(' ').map(Number.parseFloat);
       const required=rows.reduce((sum,row)=>sum+row,0)+
         (parseFloat(style.rowGap)||0)*(rows.length-1)+
@@ -690,6 +700,45 @@ window.mountDvpMobile = function mountDvpMobile() {
 
 /* The page is fully rendered HTML. This script is deferred, so the document is
    parsed by now and the motion layer can mount directly (no framework needed). */
+// Enhance the team tree before the camera measures its height. CSS reserves the
+// same panel area for every selection, so switching areas never moves the camera.
+(()=>{
+  document.querySelectorAll('.team-pyramid').forEach(pyramid=>{
+    const panels=[...pyramid.querySelectorAll('.pyramid-panel[role="tabpanel"]')];
+    const entries=[...pyramid.querySelectorAll('.pyramid-tab[role="tab"][data-team-area]')].map(tab=>({
+      tab,panel:panels.find(panel=>panel.id===tab.getAttribute('aria-controls'))
+    }));
+    // Incomplete markup keeps the fully readable, unenhanced tree.
+    if(!entries.length || entries.some(entry=>!entry.panel))return;
+    const select=(index,focus=false)=>{
+      entries.forEach(({tab,panel},i)=>{
+        const selected=i===index;
+        tab.setAttribute('aria-selected',String(selected));
+        tab.tabIndex=selected?0:-1;
+        panel.hidden=!selected;
+        panel.inert=!selected;
+      });
+      if(focus)entries[index].tab.focus({preventScroll:true});
+    };
+    entries.forEach(({tab},index)=>{
+      tab.addEventListener('click',()=>select(index));
+      tab.addEventListener('keydown',event=>{
+        if(event.altKey || event.ctrlKey || event.metaKey)return;
+        let next;
+        if(event.key==='ArrowLeft')next=(index+entries.length-1)%entries.length;
+        else if(event.key==='ArrowRight')next=(index+1)%entries.length;
+        else if(event.key==='Home')next=0;
+        else if(event.key==='End')next=entries.length-1;
+        else return;
+        event.preventDefault();
+        select(next,true);
+      });
+    });
+    const initial=entries.findIndex(({tab})=>tab.dataset.teamArea==='performance');
+    select(initial<0?0:initial);
+    pyramid.classList.add('is-interactive');
+  });
+})();
 window.dvpUnmount = window.mountDvpMobile();
 
 /* ===== Service photo links (was build/service-cards.016f4a5fee28.js) ===== */
