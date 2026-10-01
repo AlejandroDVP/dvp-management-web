@@ -23,7 +23,6 @@ El sitio es una web estática multipágina con HTML, CSS y JavaScript, sin frame
 - `/videoanalisis-futbolistas/`
 - `/bienestar-futbolistas/`
 - `/sobre-dvp/`
-- `/guia-primer-contacto-agencia/`
 
 ## Flujo de trabajo recomendado
 
